@@ -2,8 +2,8 @@
 .stack 100H
 .data
 
-arte_titulo db "   _____  _____  _____  _____           " ; , 10, 13
-            db "  /  ___>/     \/  _  \/  _  \          "
+arte_titulo db "   _____  _____  _____  _____           " ; , 10, 13 ; Isso quebra a linha
+            db "  /  ___>/     \/  _  \/  _  \          "            ; Verificar para usar na versao final
             db "  |___  ||  |--||  _  <|  _  |          "
             db "  <_____/\_____/\__|\_/\__|__/          "
             db "          __  __  _____  ____   _____   "
@@ -42,12 +42,12 @@ arte_fase_3 db "       _____  _____  _____  _____       "
 ;  _____  _____  __  __  _____    _____  __ __  _____  _____ 
 ; /   __\/  _  \/  \/  \/   __\  /  _  \/  |  \/   __\/  _  \
 ; |  |_ ||  _  ||  \/  ||   __|  |  |  |\  |  /|   __||  _  <
-; \_____/\__|__/\__ \__/\_____/  \_____/ \___/ \_____/\__|\_/                         
+; \_____/\__|__/\__ \__/\_____/  \_____/ \___/ \_____/\__|\_/
 ;  __ __  _____  _____  _____  _____  _____  _____  _____    
 ; /  |  \/   __\/  _  \/     \/   __\|  _  \/  _  \/  _  \   
 ; \  |  /|   __||  |  ||  |--||   __||  |  ||  |  ||  _  <   
 ;  \___/ \_____/\__|__/\_____/\_____/|_____/\_____/\__|\_/   
-                                                           
+
 
 
 btn_jogar db "                ",218,196,196,196,196,196,196,196,191,"               "
@@ -60,6 +60,7 @@ btn_sair db "                ",218,196,196,196,196,196,196,196,191,"            
          db "                ",192,196,196,196,196,196,196,196,217,"               "
 
 menu_selecao db 0   ; 0 = Jogar, 1 = Sair
+inicia_jogo  db 0   ; Flag para iniciar o jogo
 fps dw 10000        ; tempo em microsegundos (/10 para frames por segundo)
 
 
@@ -92,6 +93,42 @@ LIMPA_TELA proc
     loop LIMPA_PIXEL
     
     pop CX
+    ret
+endp
+
+CARREGA_FASE proc       ; Espera 4s e depois limpa a tela
+    mov CX, 003Dh
+    mov DX, 0900h
+    mov AH, 86h
+    int 15h
+    
+    call LIMPA_TELA
+    ret
+endp
+
+JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
+    cmp menu_selecao, 1
+    jne INICIA_JOGO
+    call TERMINA_JOGO
+    
+    INICIA_JOGO:                    ; Limpa a tela e desenha a fase 1
+        call LIMPA_TELA
+        mov DH, 8
+        mov DL, 0
+        mov BL, 04H
+        mov BP, offset arte_fase_1
+        mov CX, tamanho_arte
+        call ESCREVE_STRING
+        
+        call CARREGA_FASE 
+        xor inicia_jogo, 1
+
+    ret
+endp
+
+TERMINA_JOGO proc ; Encerra o jogo
+    mov AH, 4Ch
+    int 21h
     ret
 endp
 
@@ -140,7 +177,7 @@ VERIFICA_OPCAO proc         ; Verifica qual opcao esta marcada no menu (jogar/sa
         ret
 endp
 
-INTERAGE_MENU proc      ; Verifica se houve alguma intera??o na tela do menu
+INTERAGE_MENU proc      ; Verifica se houve alguma interacao na tela do menu
     push AX
     
     mov AH, 01H
@@ -164,6 +201,7 @@ INTERAGE_MENU proc      ; Verifica se houve alguma intera??o na tela do menu
     BOTAO_ENTER:
         cmp AH, 1CH     ; Enter
         jne VOLTAR_MENU
+        call JOGAR_SAIR
         
     VOLTAR_MENU:
         pop AX
