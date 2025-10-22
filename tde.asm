@@ -59,8 +59,12 @@ btn_sair db "                ",218,196,196,196,196,196,196,196,191,"            
          db "                ",179," SAIR  ",179,"               "              
          db "                ",192,196,196,196,196,196,196,196,217,"               "
 
+menu_selecao db 0   ; 0 = Jogar, 1 = Sair
+fps dw 10000        ; tempo em microsegundos (/10 para frames por segundo)
+
+
 .code
-ESCREVE_STRING proc ;Fun??o para escreve as strings
+ESCREVE_STRING proc ; Funcao que escreve strings na tela
     push ES   
     push BX
 
@@ -72,12 +76,153 @@ ESCREVE_STRING proc ;Fun??o para escreve as strings
     pop BX              
     xor BH, BH
 
-    int 10h ;interrupcao para escrever a string
+    int 10h         ; Interrupcao para escrever a string
     
     pop ES       
     ret
 endp
 
+LIMPA_TELA proc
+    push CX
+
+    mov CX, 64000
+    LIMPA_PIXEL:
+    mov SI, CX
+    mov WORD PTR ES:[SI], 0H
+    loop LIMPA_PIXEL
+    
+    pop CX
+    ret
+endp
+
+VERIFICA_OPCAO proc         ; Verifica qual opcao esta marcada no menu (jogar/sair)
+    push BP
+    push BX
+    push CX
+    push DX
+    
+    cmp menu_selecao, 0
+    jne OPCAO_SAIR
+    
+    mov DH, 18                   ; Opcao "Jogar" selecionada
+    mov DL, 0
+    mov BL, 0CH
+    mov BP, offset btn_jogar
+    mov CX, tamanho_btn
+    call ESCREVE_STRING
+    
+    mov DH, 21
+    mov BL, 0FH
+    mov BP, offset btn_sair
+    mov CX, tamanho_btn
+    call ESCREVE_STRING
+    jmp VOLTAR_VERIFICA_OPCAO
+    
+    OPCAO_SAIR:                 ; Opcao "Sair" selecionada
+        mov DH, 18
+        mov DL, 0
+        mov BL, 0FH
+        mov BP, offset btn_jogar
+        mov CX, tamanho_btn
+        call ESCREVE_STRING
+        
+        mov DH, 21
+        mov BL, 0CH
+        mov BP, offset btn_sair
+        mov CX, tamanho_btn
+        call ESCREVE_STRING
+    
+    VOLTAR_VERIFICA_OPCAO:
+        pop DX
+        pop CX
+        pop BX
+        pop BP
+        ret
+endp
+
+INTERAGE_MENU proc      ; Verifica se houve alguma intera??o na tela do menu
+    push AX
+    
+    mov AH, 01H
+    int 16H
+    jz VOLTAR_MENU
+    
+    xor AH, AH
+    int 16H
+    
+    cmp AH, 48H         ; Seta Cima
+    jne BOTAO_BAIXO
+    xor menu_selecao, 1
+    jmp VOLTAR_MENU
+    
+    BOTAO_BAIXO:
+        cmp AH, 50H     ; Seta Baixo
+        jne BOTAO_ENTER
+        xor menu_selecao, 1
+        jmp VOLTAR_MENU
+        
+    BOTAO_ENTER:
+        cmp AH, 1CH     ; Enter
+        jne VOLTAR_MENU
+        
+    VOLTAR_MENU:
+        pop AX
+        ret
+endp
+
+BUSCA_INTERACAO proc ; Cria pausas para ver se houve interacao no teclado
+    push CX
+    push DX
+    
+    mov AH, 86h
+    mov CX, 0       ; Parte alta do tempo
+    mov DX, [fps]   ; Parte baixa do tempo
+    int 15h
+    
+    pop DX
+    pop CX
+    ret
+endp
+
+JOGO proc                       ; Carrega a tela inicial do jogo (menu)
+    call LIMPA_TELA
+
+    mov DH, 0
+    mov DL, 0
+    mov BL, 0AH
+    mov BP, offset arte_titulo
+    mov CX, tamanho_arte
+    call ESCREVE_STRING
+    
+    ;
+    ; Fazer as artes das naves e meteoro
+    ;
+    
+    mov DH, 18
+    mov BL, 0CH
+    mov BP, offset btn_jogar
+    mov CX, tamanho_btn
+    call ESCREVE_STRING
+    
+    mov DH, 21
+    mov BL, 15
+    mov BP, offset btn_sair
+    mov CX, tamanho_btn
+    call ESCREVE_STRING
+    
+    MENU:
+        mov DX, fps
+        xor CX, CX
+        call BUSCA_INTERACAO
+        call INTERAGE_MENU
+        jne CONTINUA_LOOP
+    
+    CONTINUA_LOOP:
+        call VERIFICA_OPCAO
+        jmp MENU
+
+    ret
+endp
 
 MAIN:
     mov AX, @data
@@ -89,25 +234,6 @@ MAIN:
     mov AL, 13H
     int 10H
     
-    mov DH, 0
-    mov DL, 0
-    mov BL, 04H
-    mov BP, offset arte_fase_1
-    mov CX, tamanho_arte
-    call ESCREVE_STRING
-    
-    mov DH, 8
-    mov DL, 0
-    mov BL, 0CH
-    mov BP, offset arte_fase_2
-    mov CX, tamanho_arte
-    call ESCREVE_STRING
-    
-    mov DH, 16
-    mov DL, 0
-    mov BL, 0BH
-    mov BP, offset arte_fase_3
-    mov CX, tamanho_arte
-    call ESCREVE_STRING
+    call JOGO
    
 end MAIN
