@@ -1,0 +1,5 @@
+#ignora exe
+*.EXE
+
+#ignora obj
+*.OBJ
