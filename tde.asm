@@ -5,7 +5,17 @@
 
 
 .data
-      op_menu db 0
+      op_menu db 1
+     
+      seed dw 0 
+      
+      fase db 1 ;indicia fase atual 
+      
+    menu_selecao db 0   ; 0 = Jogar, 1 = Sair
+    inicia_jogo  db 0   ; Flag para iniciar o jogo
+    fps dw 10000        ; tempo em microsegundos (/10 para frames por segundo)
+
+      
       
 arte_titulo db 3 dup(" ")," ___                    _    _     ", 10, 13 ; , 10, 13 ; Isso quebra a linha
             db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", 10, 13            ; Verificar para usar na versao final
@@ -14,29 +24,25 @@ arte_titulo db 3 dup(" ")," ___                    _    _     ", 10, 13 ; , 10, 
        
 tamanho_arte equ $ - arte_titulo
 
-arte_fase_1 db "   __                _ ", 10, 13
-            db "  / _|__ _ ___ ___  / |", 10, 13
-            db " |  _/ _` (_-</ -_) | |", 10, 13
-            db " |_| \__,_/__/\___| |_|", 10, 13
+arte_fase_1 db "  ___               _ ", 10, 13
+            db " | __|_ _ ___ ___  / |", 10, 13
+            db " | _/ _` (_-</ -_) | |", 10, 13
+            db " |_|\__,_/__/\___| |_|", 10, 13
+            
+tamanho_fase1 equ $ - arte_fase_1
 
+arte_fase_2 db " ___               ___ ", 10, 13
+            db "| __|_ _ ___ ___  |_  )", 10, 13
+            db "| _/ _` (_-</ -_)  / / ", 10, 13
+            db "|_|\__,_/__/\___| /___|", 10, 13
+            
+tamanho_fase2 equ $ - arte_fase_2
 
-arte_fase_2 db "       _____  _____  _____  _____       "
-            db "      /   __\/  _  \/  ___>/   __\      "
-            db "      |   __||  _  ||___  ||   __|      "
-            db "      \__/   \__|__/<_____/\_____/      "
-            db "                 _____                  "
-            db "                <___  \                 "
-            db "                 /  __/                 "
-            db "                <_____|                 "
-
-arte_fase_3 db "       _____  _____  _____  _____       "
-            db "      /   __\/  _  \/  ___>/   __\      "
-            db "      |   __||  _  ||___  ||   __|      "
-            db "      \__/   \__|__/<_____/\_____/      "
-            db "                 _____                  "
-            db "                /  _  \                 "
-            db "                >-<_  <                 "
-            db "                \_____/                 "
+arte_fase_3 db "  ___               ____ ", 10, 13
+            db " | __|_ _ ___ ___  |__ / ", 10, 13
+            db " | _/ _` (_-</ -_)  |_ \ ", 10, 13
+            db " |_|\__,_/__/\___| |___/ ", 10, 13
+tamanho_fase3 equ $ - arte_fase_3
             
 ;  _____  _____  __  __  _____    _____  __ __  _____  _____ 
 ; /   __\/  _  \/  \/  \/   __\  /  _  \/  |  \/   __\/  _  \
@@ -65,14 +71,53 @@ btn_sair  db 15 dup(" "),218,196,196,196,196,196,196,196,191,10,13
 tamanho_sair equ $-btn_sair
 
 
-menu_selecao db 0   ; 0 = Jogar, 1 = Sair
-inicia_jogo  db 0   ; Flag para iniciar o jogo
-fps dw 10000        ; tempo em microsegundos (/10 para frames por segundo)
+;FORMULA BASICA DE POSICIONAMENTO NA TELA: LINHA * 320 + COLUNA.
+; 13 linhas ? 29 colunas
+nave db 09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+     db 00H,09H,09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,0CH,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H,00H,00H,00H
+     db 00H,00H,08H,09H,09H,09H,09H,09H,09H,00H,00H,00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,0EH,0EH,0EH,0EH,0EH,00H,00H,00H
+     db 00H,00H,00H,09H,09H,09H,09H,09H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,0EH,00H,08H,0EH,0EH,08H,00H,00H
+     db 00H,00H,00H,00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,0EH,00H,08H,0EH,0EH,0EH,06H,00H
+     db 00H,00H,00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,08H,0EH,00H,0EH,0EH,0EH,08H,0EH,0EH
+     db 0EH,0EH,0EH,0EH,0EH,0EH,0EH,0EH,0EH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,06H,00H,00H,00H,00H,00H,00H,00H,00H
+     db 00H,00H,00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH
+     db 00H,00H,00H,00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,06H,00H
+     db 00H,00H,00H,09H,09H,09H,09H,09H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,08H,00H,00H
+     db 00H,08H,09H,09H,09H,09H,09H,09H,01H,00H,00H,00H,06H,06H,06H,0CH,0CH,0CH,0CH,06H,06H,06H,06H,06H,08H,00H,00H,00H,00H
+     db 00H,09H,09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,06H,06H,06H,06H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+     db 09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+
+nave_tamanho equ $-nave
 
 
-.code 
+; ========= METEORO 13x29 (valores em 00H..0FH) =========
+; 13 linhas ? 29 colunas
+meteoro db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,08H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,0DH,0DH,0DH,05H,05H,08H,00H,00H,05H,05H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,0CH,0DH,05H,05H,05H,0CH,0CH,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,0CH,0CH,05H,05H,05H,05H,0CH,0CH,0CH,00H,00H,00H,0DH,0DH,0CH,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,00H,05H,05H,0CH,05H,0CH,0CH,05H,05H,05H,0CH,0CH,05H,05H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,05H,0CH,0CH,05H,0CH,0CH,0CH,05H,05H,0CH,05H,05H,0CH,05H,05H,05H,00H,00H,05H,05H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,05H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,05H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,05H,0CH,0CH,0CH,05H,05H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,05H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,05H,05H,0DH,0CH,05H,0CH,0CH,0CH,0CH,0CH,05H,05H,0CH,0CH,0CH,0CH,00H,00H,0CH,0CH,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,08H,05H,0DH,0DH,0CH,05H,0CH,0CH,0CH,0CH,05H,05H,05H,0CH,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,00H,00H,05H,0DH,0DH,0CH,0CH,0CH,0CH,0CH,05H,05H,05H,00H,00H,0CH,0CH,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,00H,00H,00H,08H,08H,05H,05H,05H,05H,0CH,08H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
+        db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
 
-ESCREVE_STRING proc ; Funcao que escreve strings na tela
+meteoro_tamanho equ $-meteoro
+
+
+nave_posicao dw 0
+meteoro_posicao dw 0
+        
+.code  
+
+
+; Funcao generica que escreve Strings com cor na tela
+
+ESCREVE_STRING proc 
     push AX
     push BX
     push DS
@@ -298,7 +343,7 @@ ESCREVE_BOTOES proc
     mov BL, 0FH;cor
     mov AH, op_menu
     
-    cmp AH, 0     
+    cmp AH, 1     
     
     jne INICIA_BTN
     mov BL, 0CH
@@ -308,14 +353,14 @@ INICIA_BTN:
     mov BP, offset btn_jogar 
     mov CX, tamanho_jogar
     
-    xor DL,DL ;coluna = 0
-    mov DH,18 ;linha = 18
+    xor DL,DL ;coluna = 0 | Modo 13h (320?200): grade 40?25 (colunas 0..39, linhas 0..24).
+    mov DH,18 ;linha = 18 |
     
     call ESCREVE_STRING
     
     mov BL, 0FH
     mov AH, op_menu
-    cmp AH, 1
+    cmp AH, 0
     jne SAIR_BTN
     mov BL, 0CH
     
@@ -326,12 +371,180 @@ SAIR_BTN:
    xor DL, DL ;colunha =0;
    mov DH, 21 ;linha
    
+   call ESCREVE_STRING
+   
    
    pop AX      
     
    ret
-endp    
+endp 
+
+REINICIA_FASE proc  ;RESET_SECTOR
+    mov fase, 1
     
+  ret
+endp
+
+ 
+;INT 1AH - CLOCK 00H - GET TIME OF DAY
+;Obtem os valores do controlador do relogio
+;do sistema.
+SEED_FROM_TICKS proc  ;SYSTIME_SEED
+    push AX
+    push CX
+    push DX
+    mov  AH, 00h
+    int  1Ah              ; CX:DX = ticks desde 00:00
+    mov  seed, DX         
+    pop  DX
+    pop  CX
+    pop  AX
+    
+    ret
+endp
+
+;proc que reposiciona naves e objetos no menu inicial
+;Nave aliada: move-se da esquerda para a direita,
+;desaparecendo ao atingir o limite direito da tela e reaparecendo 
+;novamente ???????????? esquerda.
+
+;Meteoro: realiza o movimento inverso, deslocando-se
+;da direita para a esquerda, desaparecendo no limite esquerdo
+; e reaparecendo no lado direito. 
+
+RESET_POSICOES_MENU proc
+    
+    ;FORMULA BASICA DE POSICIONAMENTO NA TELA: LINHA * 320 + COLUNA.
+    push AX   
+    
+    xor AX,AX ;zera antes 
+    
+    mov AX, 70*320 ; Y=70 X = 0
+    
+    mov nave_posicao, AX 
+     
+    add AX, 319 ;vai ate o fim da linha onde vem o meteoro 
+ 
+     
+    add AX, 40*320  ;40 pixel pra baixo da nave, tem que multiplicar por 32 
+    
+   
+    mov meteoro_posicao, AX   
+       
+       
+    pop AX
+    
+  ret
+endp
+
+;proc que "limpa" 13x29 pixeis na posicao DI
+;DI = POSICAO
+LIMPA_13x29 proc;            
+     push AX
+     push CX
+     push DI
+     push ES
+       
+     CLD
+       
+     mov AX, 0A000H;MEMORIA DE VIDEO
+     mov ES, AX
+     mov CX, 13
+     xor AX,AX
+     
+     
+LIMPA_LOOP:
+    push CX
+    mov CX, 29
+   
+    
+    rep stosb;rep stosb grava o byte de AL em memoria a partir de ES:DI, CX vezes
+    
+    add DI, 301
+    pop CX
+    loop LIMPA_LOOP
+    
+     
+     
+     pop ES
+     pop DI
+     pop CX
+     pop AX
+
+
+  ret
+endp
+
+
+;proc que desenha um elemento na tela utilizando rep movsb ;DS:SI -> ES:DI 
+; AX = posicao atual do elemento
+; SI = offset do elemento no DS
+
+DESENHA proc
+     push BX
+     push CX
+     push DX
+     push DI
+     push ES
+     push DS
+     push AX ;salva a posicao
+      
+     mov AX, @data
+     mov DS, AX
+     
+     mov AX, 0A000H;SEGMENTO DE VIDEO
+     mov ES, AX
+     
+     
+     pop AX ;volta a posicao salva
+     mov DI, AX
+     MOV DX, 13 ;altura 13
+     
+     push AX
+     
+LINHA_LOOP:
+     mov CX,29 ;largura 29
+     rep movsb ;DS:SI -> ES:DI 
+     add DI, 320-29  ;+320 avanca 1 linha - 29 para ir na posicao correta do inicio da nave
+     
+     dec DX ;terminou uma linha decrementa o contador de altura 
+     jnz LINHA_LOOP 
+     
+     pop AX
+     pop DS
+     pop ES
+     pop DI
+     pop DX
+     pop CX
+     pop BX
+     
+    ret
+endp
+        
+NAVE_METEORO_MENU proc
+    
+   
+    mov AX, nave_posicao
+    mov DI, AX
+    call LIMPA_13x29; apaga 13x29 na posicao DI.
+    
+    cmp AX, 70*320+291 ;70*320 = LINHA 70 + COLUNA = 291compara se a nave chegou na borda direita
+  ;  je MOVE_METEORO
+    
+    inc nave_posicao ;move 1 pixel
+    inc AX ;move tambem AX 1 pixel 
+    
+    mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
+    call DESENHA; RENDER_SPRITE
+    
+    xor CX,CX
+    
+    
+  ret
+endp 
+
+
+
 MAIN:
     ;referencia o segmento de dados em ds
     mov AX, @data
@@ -342,14 +555,21 @@ MAIN:
     mov AX, 0A000H
     mov ES, AX
     
+    
+    ;call SEED_FROM_TICKS
+    
     ;inicia modo de video com 0A000H
     xor AH, AH
     mov AL, 13H
     int 10H
     
     
+    
     call ESCREVE_TITULO
-    call ESCREVE_BOTOES
+    call ESCREVE_BOTOES  
+    
+    call RESET_POSICOES_MENU ;posiciona na ve e meteoro nas extremidades
+    call NAVE_METEORO_MENU
     
     call JOGO
    
