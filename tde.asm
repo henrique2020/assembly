@@ -404,14 +404,6 @@ SEED_FROM_TICKS proc  ;SYSTIME_SEED
 endp
 
 ;proc que reposiciona naves e objetos no menu inicial
-;Nave aliada: move-se da esquerda para a direita,
-;desaparecendo ao atingir o limite direito da tela e reaparecendo 
-;novamente ???????????? esquerda.
-
-;Meteoro: realiza o movimento inverso, deslocando-se
-;da direita para a esquerda, desaparecendo no limite esquerdo
-; e reaparecendo no lado direito. 
-
 RESET_POSICOES_MENU proc
     
     ;FORMULA BASICA DE POSICIONAMENTO NA TELA: LINHA * 320 + COLUNA.
@@ -419,14 +411,14 @@ RESET_POSICOES_MENU proc
     
     xor AX,AX ;zera antes 
     
-    mov AX, 70*320 ; Y=70 X = 0
+    mov AX, 50*320 
     
     mov nave_posicao, AX 
      
-    add AX, 319 ;vai ate o fim da linha onde vem o meteoro 
+    add AX, 291 ;vai ate o fim da linha onde vem o meteoro 
  
      
-    add AX, 40*320  ;40 pixel pra baixo da nave, tem que multiplicar por 32 
+    add AX, 40*320  ;40 pixel pra baixo da nave, tem que multiplicar por 320 
     
    
     mov meteoro_posicao, AX   
@@ -440,37 +432,29 @@ endp
 ;proc que "limpa" 13x29 pixeis na posicao DI
 ;DI = POSICAO
 LIMPA_13x29 proc;            
-     push AX
-     push CX
-     push DI
-     push ES
-       
-     CLD
-       
-     mov AX, 0A000H;MEMORIA DE VIDEO
-     mov ES, AX
-     mov CX, 13
-     xor AX,AX
-     
-     
-LIMPA_LOOP:
+    push AX
+    push CX
+    push DI
+    push ES
+    
+    mov AX, 0A000H
+    mov ES, AX
+    mov CX, 13
+
+LIMPA_LINHA:
     push CX
     mov CX, 29
-   
-    
-    rep stosb;rep stosb grava o byte de AL em memoria a partir de ES:DI, CX vezes
-    
-    add DI, 301
+    xor AX, AX
+    rep stosb
+    add DI, 291
     pop CX
-    loop LIMPA_LOOP
-    
-     
-     
-     pop ES
-     pop DI
-     pop CX
-     pop AX
+    loop LIMPA_LINHA
 
+    pop ES
+    pop DI
+    pop CX
+    pop AX
+    ret
 
   ret
 endp
@@ -525,11 +509,12 @@ NAVE_METEORO_MENU proc
     
    
     mov AX, nave_posicao
-    mov DI, AX
+    mov DI, AX   
+    
     call LIMPA_13x29; apaga 13x29 na posicao DI.
     
-    cmp AX, 70*320+291 ;70*320 = LINHA 70 + COLUNA = 291compara se a nave chegou na borda direita
-  ;  je MOVE_METEORO
+    cmp AX, 50*320+291 ;LINHA 70 + COLUNA = 291 compara se a nave chegou na borda direita
+    je MOVE_METEORO
     
     inc nave_posicao ;move 1 pixel
     inc AX ;move tambem AX 1 pixel 
@@ -538,10 +523,46 @@ NAVE_METEORO_MENU proc
     call DESENHA; RENDER_SPRITE
     
     xor CX,CX
+    mov DX, 2710H ;equivavle a 10000 decimal = 10ms
+    mov AH, 86H   ; INT 15h / AH=86h (BIOS wait)
+    int 15H       ; bloqueia ate passar o tempo; CF=0 se ok
     
+    jmp END_POS_UPDATE 
     
+MOVE_METEORO:
+    mov AX, meteoro_posicao
+    mov DI, AX;move a posicao do meteoro para DI
+    
+    push AX
+    cmp AX, 90*320 
+    pop AX
+    
+    je RESET_POS
+    
+    call LIMPA_13x29; apaga 13x29 na posicao DI.
+        
+    ;meteoro vem pra direita    
+    dec meteoro_posicao
+    dec AX
+    
+    mov SI, offset meteoro
+    call DESENHA; RENDER_SPRIT
+    
+    xor CX,CX
+    mov DX, 2710H ;equivavle a 10000 decimal = 10ms
+    mov AH, 86H   ; INT 15h / AH=86h (BIOS wait)
+    int 15H       ; bloqueia ate passar o tempo; CF=0 se ok
+    
+    jmp END_POS_UPDATE
+
+
+RESET_POS:
+    call LIMPA_13x29; apaga 13x29 na posicao DI.
+    call RESET_POSICOES_MENU 
+
+END_POS_UPDATE:
   ret
-endp 
+endp
 
 
 
@@ -569,8 +590,19 @@ MAIN:
     call ESCREVE_BOTOES  
     
     call RESET_POSICOES_MENU ;posiciona na ve e meteoro nas extremidades
-    call NAVE_METEORO_MENU
+   
     
-    call JOGO
+    
+    mov CX,10     
+    
+MENU_LOOP:
+         call NAVE_METEORO_MENU
+
+    jmp MENU_LOOP
+    
+    
+    mov AH, 4ch
+    xor AL, AL
+    int 21h
    
 end MAIN
