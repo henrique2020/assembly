@@ -478,26 +478,22 @@ DESENHA proc
 endp
 
 NAVE_METEORO_MENU proc
-    mov AX, nave_posicao
-    mov DI, AX   
+    MOVE_NAVE:
+        mov AX, nave_posicao
+        mov DI, AX   
+        
+        call LIMPA_13x29; apaga 13x29 na posicao DI.
+        
+        cmp AX, 50*320+291 ;LINHA 70 + COLUNA = 291 compara se a nave chegou na borda direita
+        je MOVE_METEORO
+        
+        inc nave_posicao ;move 1 pixel
+        inc AX ;move tambem AX 1 pixel 
+        
+        mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
+        call DESENHA; RENDER_SPRITE
     
-    call LIMPA_13x29; apaga 13x29 na posicao DI.
-    
-    cmp AX, 50*320+291 ;LINHA 70 + COLUNA = 291 compara se a nave chegou na borda direita
-    je MOVE_METEORO
-    
-    inc nave_posicao ;move 1 pixel
-    inc AX ;move tambem AX 1 pixel 
-    
-    mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
-    call DESENHA; RENDER_SPRITE
-    
-    xor CX, CX
-    mov DX, [fps] 
-    mov AH, 86H   ; INT 15h / AH=86h (BIOS wait)
-    int 15H       ; bloqueia ate passar o tempo; CF=0 se ok
-    
-    jmp END_POS_UPDATE 
+    ; jmp END_POS_UPDATE ; Vira uma movimenta??o sequencial
     
     MOVE_METEORO:
         mov AX, meteoro_posicao
@@ -517,11 +513,6 @@ NAVE_METEORO_MENU proc
         
         mov SI, offset meteoro
         call DESENHA; RENDER_SPRIT
-        
-        xor CX,CX
-        mov DX, 2710H ;equivavle a 10000 decimal = 10ms
-        mov AH, 86H   ; INT 15h / AH=86h (BIOS wait)
-        int 15H       ; bloqueia ate passar o tempo; CF=0 se ok
         
         jmp END_POS_UPDATE
 
