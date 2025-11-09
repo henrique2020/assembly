@@ -14,7 +14,14 @@ fase db 1 ;indicia fase atual
 menu_selecao db 0   ; 0 = Jogar, 1 = Sair
 inicia_jogo  db 0   ; Flag para iniciar o jogo
 fps dw 10000        ; tempo em microsegundos (/10 para frames por segundo)
+tempo_tela_fase dd 1000 * 1000 * 1
 
+largura_video dw 320
+altura_video dw 200
+
+nave_posicao dw 0
+nave_inimica_posicao dw 0
+meteoro_posicao dw 0
       
       
 arte_titulo db 3 dup(" ")," ___                    _    _     ", 10, 13 ; , 10, 13 ; Isso quebra a linha
@@ -31,17 +38,17 @@ arte_f1 db 10 dup(" ")," ___               _ ", 10, 13
             
 tamanho_f1 equ $ - arte_f1
 
-arte_f2 db " ___               ___ ", 10, 13
-        db "| __|_ _ ___ ___  |_  )", 10, 13
-        db "| _/ _` (_-</ -_)  / / ", 10, 13
-        db "|_|\__,_/__/\___| /___|", 10, 13
+arte_f2 db 10 dup(" ")," ___               ___ ", 10, 13
+        db 10 dup(" "),"| __|_ _ ___ ___  |_  )", 10, 13
+        db 10 dup(" "),"| _/ _` (_-</ -_)  / / ", 10, 13
+        db 10 dup(" "),"|_|\__,_/__/\___| /___|", 10, 13
             
 tamanho_f2 equ $ - arte_f2
 
-arte_f3 db "  ___               ____ ", 10, 13
-        db " | __|_ _ ___ ___  |__ / ", 10, 13
-        db " | _/ _` (_-</ -_)  |_ \ ", 10, 13
-        db " |_|\__,_/__/\___| |___/ ", 10, 13
+arte_f3 db 10 dup(" ")," ___               ____ ", 10, 13
+        db 10 dup(" "),"| __|_ _ ___ ___  |__ / ", 10, 13
+        db 10 dup(" "),"| _/ _` (_-</ -_)  |_ \ ", 10, 13
+        db 10 dup(" "),"|_|\__,_/__/\___| |___/ ", 10, 13
 tamanho_f3 equ $ - arte_f3
             
 ;  _____  _____  __  __  _____    _____  __ __  _____  _____ 
@@ -107,10 +114,6 @@ meteoro db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,08H,0
         db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
 
 meteoro_tamanho equ $-meteoro
-
-
-nave_posicao dw 0
-meteoro_posicao dw 0
         
 .code
 ; Funcao generica que escreve Strings com cor na tela
@@ -165,9 +168,96 @@ LIMPA_TELA proc
     ret
 endp
 
-CARREGA_FASE proc       ; Espera 4s e depois limpa a tela
-    mov CX, 003Dh
-    mov DX, 0900h
+VERIFICA_TECLADO_JOGO proc
+    push AX
+    
+    mov AH, 01h     ; Verifica se h? tecla
+    int 16h
+    jz FIM_TECLADO_JOGO ; Se n?o, sai
+    
+    xor AH, AH      ; Se sim, l? a tecla
+    int 16h
+    
+    ; O PDF exige movimento nas 4 setas
+    cmp AH, 48H     ; Seta Cima?
+    je SETA_CIMA
+    
+    cmp AH, 50H     ; Seta Baixo?
+    je SETA_BAIXO
+    
+    cmp AH, 4BH     ; Seta Esquerda?
+    je SETA_ESQUERDA
+    
+    cmp AH, 4DH     ; Seta Direita?
+    je SETA_DIREITA
+    
+    jmp FIM_TECLADO_JOGO ; Ignora outras teclas
+    
+    SETA_CIMA:
+        mov AX, 0 ; 0 = Cima
+        call MOVER_VERTICAL
+        jmp FIM_TECLADO_JOGO
+        
+    SETA_BAIXO:
+        mov AX, 1 ; 1 = Baixo
+        call MOVER_VERTICAL
+        jmp FIM_TECLADO_JOGO
+
+    SETA_ESQUERDA:
+        mov AX, 0 ; 0 = Esquerda
+        call MOVER_HORIZONTAL
+        jmp FIM_TECLADO_JOGO
+
+    SETA_DIREITA:
+        mov AX, 1 ; 1 = Direita
+        call MOVER_HORIZONTAL
+        jmp FIM_TECLADO_JOGO
+        
+    FIM_TECLADO_JOGO:
+        pop AX
+        ret
+    endp
+
+MOVER_VERTICAL proc
+    ; AX=0 (Cima), AX=1 (Baixo)
+    push BX
+    mov BX, [largura_video]
+    
+    cmp AX, 0
+    je MOVER_CIMA
+    MOVER_BAIXO:
+        add [nave_posicao], BX
+        jmp SAIR_MOVIMENTO_VERTICAL
+    
+    MOVER_CIMA:
+        sub [nave_posicao], BX
+        jmp SAIR_MOVIMENTO_VERTICAL
+    
+    SAIR_MOVIMENTO_VERTICAL:
+        pop BX
+        ret
+endp
+
+MOVER_HORIZONTAL proc
+    ; AX=0 (Esquerda), AX=1 (Direita)
+    cmp AX, 0
+    je MOVER_ESQUERDA
+    
+    MOVER_DIREITA:
+        inc [nave_posicao]
+        jmp SAIR_MOVIMENTO_HORIZONTAL
+    
+    MOVER_ESQUERDA:
+        dec [nave_posicao]
+        jmp SAIR_MOVIMENTO_HORIZONTAL
+    
+    SAIR_MOVIMENTO_HORIZONTAL:
+        ret
+endp
+
+CARREGA_FASE proc       ; Espera X segundos e depois limpa a tela
+    mov CX, WORD PTR [tempo_tela_fase + 2]
+    mov DX, WORD PTR [tempo_tela_fase]
     mov AH, 86h
     int 15h
     
@@ -175,22 +265,66 @@ CARREGA_FASE proc       ; Espera 4s e depois limpa a tela
     ret
 endp
 
+PARTIDA proc        
+    JOGANDO:
+        call BUSCA_INTERACAO
+        
+        mov DI, [nave_posicao]
+        call LIMPA_13x29; apaga 13x29 na posicao DI.
+        
+        call VERIFICA_TECLADO_JOGO
+        
+        mov AX, [nave_posicao]
+        mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
+        call DESENHA; RENDER_SPRITE
+        
+        jmp JOGANDO
+
+    ret
+endp
+
 JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
     cmp menu_selecao, 1
-    jne INICIA_JOGO_F1
+    jne JOGAR_F1
     call TERMINA_JOGO
     
-    INICIA_JOGO_F1:                    ; Limpa a tela e desenha a fase 1
+    JOGAR_F1:
+        xor inicia_jogo, 1
         call LIMPA_TELA
         mov DH, 10
         mov DL, 0
-        mov BL, 04H
+        mov BL, 0FH
         mov BP, offset arte_f1
         mov CX, tamanho_f1
         call ESCREVE_STRING
         
-        call CARREGA_FASE 
-        xor inicia_jogo, 1
+        call CARREGA_FASE
+        ; call PARTIDA
+        
+    JOGAR_F2:
+        call LIMPA_TELA
+        mov DH, 10
+        mov DL, 0
+        mov BL, 0CH
+        mov BP, offset arte_f2
+        mov CX, tamanho_f2
+        call ESCREVE_STRING
+        
+        call CARREGA_FASE
+        ; call PARTIDA
+        
+    JOGAR_F3:
+        call LIMPA_TELA
+        mov DH, 10
+        mov DL, 0
+        mov BL, 04H
+        mov BP, offset arte_f3
+        mov CX, tamanho_f3
+        call ESCREVE_STRING
+        
+        call CARREGA_FASE
+        call PARTIDA
+        
 
     ret
 endp
@@ -459,7 +593,7 @@ DESENHA proc
      push AX
      
     LINHA_LOOP:
-         mov CX,29 ;largura 29
+         mov CX, 29 ;largura 29
          rep movsb ;DS:SI -> ES:DI 
          add DI, 320-29  ;+320 avanca 1 linha - 29 para ir na posicao correta do inicio da nave
          
