@@ -849,7 +849,7 @@ MAIN:
     mov AX, 0A000H
     mov ES, AX
     
-    ; call SEED_FROM_TICKS
+    call SEED_FROM_TICKS
     
     ;inicia modo de video com 0A000H
     xor AH, AH
