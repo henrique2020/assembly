@@ -22,8 +22,6 @@ altura_video dw 200
 nave_posicao dw 0
 nave_inimica_posicao dw 0
 meteoro_posicao dw 0
-      
-
 
 alien_posicao dw 0
 alien_y dw 0
@@ -31,8 +29,8 @@ alien_x dw 0
 alien_direction dw 1 ;1 = esquerda, 2 = direita
 
       
-arte_titulo db 3 dup(" ")," ___                    _    _     ", 10, 13 ; , 10, 13 ; Isso quebra a linha
-            db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", 10, 13            ; Verificar para usar na versao final
+arte_titulo db 3 dup(" ")," ___                    _    _     ", 10, 13
+            db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", 10, 13
             db 3 dup(" "),"\__ \/ _| '_/ _` | '  \| '_ \ / -_)", 10, 13
             db 3 dup(" "),"|___/\__|_| \__,_|_|_|_|_.__/_\___|", 10, 13
        
@@ -86,7 +84,7 @@ tamanho_sair equ $-btn_sair
 
 
 ;FORMULA BASICA DE POSICIONAMENTO NA TELA: LINHA * 320 + COLUNA.
-; 13 linhas ? 29 colunas
+; 13 linhas x 29 colunas
 nave db 09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
      db 00H,09H,09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,0CH,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H,00H,00H,00H
      db 00H,00H,08H,09H,09H,09H,09H,09H,09H,00H,00H,00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,0EH,0EH,0EH,0EH,0EH,00H,00H,00H
@@ -105,7 +103,7 @@ nave_tamanho equ $-nave
 
 
 ; ========= METEORO 13x29 (valores em 00H..0FH) =========
-; 13 linhas ? 29 colunas
+; 13 linhas x 29 colunas
 meteoro db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,08H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
         db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,0DH,0DH,0DH,05H,05H,08H,00H,00H,05H,05H,00H,00H,00H,00H,00H,00H,00H,00H
         db 00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,0CH,0DH,05H,05H,05H,0CH,0CH,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
@@ -135,7 +133,7 @@ alien  db 00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0E
        db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
        db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
        db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
-       db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H ;começar de baixo a 
+       db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
 alien_tamanho equ $ - alien
 
         
@@ -195,28 +193,29 @@ endp
 
 VERIFICA_TECLADO_JOGO proc
     push AX
+    push DI
+    mov DI, [nave_posicao]
     
-    mov AH, 01h     ; Verifica se h? tecla
+    mov AH, 01h
     int 16h
-    jz FIM_TECLADO_JOGO ; Se n?o, sai
+    jz FIM_TECLADO_JOGO
     
-    xor AH, AH      ; Se sim, l? a tecla
+    xor AH, AH
     int 16h
     
-    ; O PDF exige movimento nas 4 setas
-    cmp AH, 48H     ; Seta Cima?
+    cmp AH, 48H
     je SETA_CIMA
     
-    cmp AH, 50H     ; Seta Baixo?
+    cmp AH, 50H
     je SETA_BAIXO
     
-    cmp AH, 4BH     ; Seta Esquerda?
+    cmp AH, 4BH
     je SETA_ESQUERDA
     
-    cmp AH, 4DH     ; Seta Direita?
+    cmp AH, 4DH
     je SETA_DIREITA
     
-    jmp FIM_TECLADO_JOGO ; Ignora outras teclas
+    jmp FIM_TECLADO_JOGO
     
     SETA_CIMA:
         mov AX, 0 ; 0 = Cima
@@ -239,7 +238,9 @@ VERIFICA_TECLADO_JOGO proc
         jmp FIM_TECLADO_JOGO
         
     FIM_TECLADO_JOGO:
+        mov [nave_posicao], DI
         pop AX
+        pop DI
         ret
     endp
 
@@ -251,11 +252,11 @@ MOVER_VERTICAL proc
     cmp AX, 0
     je MOVER_CIMA
     MOVER_BAIXO:
-        add [nave_posicao], BX
+        add DI, BX
         jmp SAIR_MOVIMENTO_VERTICAL
     
     MOVER_CIMA:
-        sub [nave_posicao], BX
+        sub DI, BX
         jmp SAIR_MOVIMENTO_VERTICAL
     
     SAIR_MOVIMENTO_VERTICAL:
@@ -269,11 +270,11 @@ MOVER_HORIZONTAL proc
     je MOVER_ESQUERDA
     
     MOVER_DIREITA:
-        inc [nave_posicao]
+        inc DI
         jmp SAIR_MOVIMENTO_HORIZONTAL
     
     MOVER_ESQUERDA:
-        dec [nave_posicao]
+        dec DI
         jmp SAIR_MOVIMENTO_HORIZONTAL
     
     SAIR_MOVIMENTO_HORIZONTAL:
@@ -757,9 +758,8 @@ MENU_ANIMATION proc
         mov AX, meteoro_posicao
         mov DI, AX;move a posicao do meteoro para DI
         
-        ; push AX
         cmp AX, 70*320 ;linha 70 = 50 da nave + 20 do reset posicoes
-        ;pop AX
+        
         
         je RESET_NAVE_METEORO
         
@@ -784,10 +784,8 @@ MENU_ANIMATION proc
         mov DI, AX;move a posicao do meteoro para DI
         
         mov DX,alien_x 
-         
-        ;push AX
-        cmp DX,0 ;Chegou na borda da esquerda     
-        ;pop AX
+        
+        cmp DX,0 ;Chegou na borda da esquerda
         
         je RESET_ALIEN_DIRECTION
         
