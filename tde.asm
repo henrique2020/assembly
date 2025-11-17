@@ -773,7 +773,7 @@ MENU_ANIMATION proc
         call DESENHA; RENDER_SPRIT
         
         
-     ;refazer    
+      
      MOVE_ALIEN:
     
      mov DX,alien_direction
@@ -808,7 +808,7 @@ MENU_ANIMATION proc
         ;push AX
         cmp DX,291 ;Chegou na borda da esquerda     
         ;pop AX     
-        je RESET_ALIEN
+        je RESET_ALIEN_DIRECTION_2
         
         call LIMPA_13x29; apaga 13x29 na posicao DI.
             
@@ -825,9 +825,8 @@ MENU_ANIMATION proc
         mov alien_direction,2
         jmp END_POS_UPDATE
         
-  RESET_ALIEN:
-        call LIMPA_13x29
-        call RESET_ALIEN_MENU
+    RESET_ALIEN_DIRECTION_2:
+        mov alien_direction,1
         jmp END_POS_UPDATE
         
   RESET_NAVE_METEORO:
