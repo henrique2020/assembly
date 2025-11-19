@@ -5,6 +5,17 @@
 
 
 .data
+    MICRO_TO_SEC EQU 1000000    ; 1 segundo = 1.000.000 microsegundos (1000 * 1000)
+    DURACAO_FASE EQU 60         ; Tempo que ira durar cada fase
+    NUMERO_VIDAS EQU 3
+    N_DIGITIOS_TEMPO EQU 2
+    N_DIGITOS_PONTOS EQU 5
+    CR EQU 13                   ; define uma constante de valor 13
+    LF EQU 10                   ; define uma constante de valor 10
+    
+    ALTURA EQU 200
+    LARGURA EQU 320
+
 op_menu db 1
 
 seed dw 0 
@@ -13,14 +24,25 @@ fase db 1 ;indicia fase atual
       
 menu_selecao db 0   ; 0 = Jogar, 1 = Sair
 inicia_jogo  db 0   ; Flag para iniciar o jogo
-fps dw 10000        ; tempo em microsegundos (/10 para frames por segundo)
-tempo_tela_fase dd 1000 * 1000 * 1
+delay dw 1000        ; tempo em microsegundos (/10 para frames por segundo)
+tempo_tela_fase dd MICRO_TO_SEC * 1
 
-largura_video dw 320
-altura_video dw 200
+temp_numero db ?
+
+vidas dw NUMERO_VIDAS
+
+caracteres_pontuacao dw N_DIGITOS_PONTOS
+pontuacao dw 0
+
+caracteres_tempo dw N_DIGITIOS_TEMPO
+tempo_fase dw DURACAO_FASE
+tempo_restante dw DURACAO_FASE
+
+largura_video dw LARGURA
+altura_video dw ALTURA
 
 nave_posicao dw 0
-nave_inimica_posicao dw 0
+nave_inimiga_posicao dw 0
 meteoro_posicao dw 0
 
 alien_posicao dw 0
@@ -28,32 +50,36 @@ alien_y dw 0
 alien_x dw 0
 alien_direction dw 1 ;1 = esquerda, 2 = direita
 
+
+limite_topo dw 10 * LARGURA
+limite_fundo dw (ALTURA - 13) * LARGURA
+limite_direita dw LARGURA - 29 
       
-arte_titulo db 3 dup(" ")," ___                    _    _     ", 10, 13
-            db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", 10, 13
-            db 3 dup(" "),"\__ \/ _| '_/ _` | '  \| '_ \ / -_)", 10, 13
-            db 3 dup(" "),"|___/\__|_| \__,_|_|_|_|_.__/_\___|", 10, 13
+arte_titulo db 3 dup(" ")," ___                    _    _     ", LF, CR
+            db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", LF, CR
+            db 3 dup(" "),"\__ \/ _| '_/ _` | '  \| '_ \ / -_)", LF, CR
+            db 3 dup(" "),"|___/\__|_| \__,_|_|_|_|_.__/_\___|", LF, CR
        
 tamanho_arte equ $ - arte_titulo
 
-arte_f1 db 10 dup(" ")," ___               _ ", 10, 13
-        db 10 dup(" "),"| __|_ _ ___ ___  / |", 10, 13
-        db 10 dup(" "),"| _/ _` (_-</ -_) | |", 10, 13
-        db 10 dup(" "),"|_|\__,_/__/\___| |_|", 10, 13
+arte_f1 db 10 dup(" ")," ___               _ ", LF, CR
+        db 10 dup(" "),"| __|_ _ ___ ___  / |", LF, CR
+        db 10 dup(" "),"| _/ _` (_-</ -_) | |", LF, CR
+        db 10 dup(" "),"|_|\__,_/__/\___| |_|", LF, CR
             
 tamanho_f1 equ $ - arte_f1
 
-arte_f2 db 10 dup(" ")," ___               ___ ", 10, 13
-        db 10 dup(" "),"| __|_ _ ___ ___  |_  )", 10, 13
-        db 10 dup(" "),"| _/ _` (_-</ -_)  / / ", 10, 13
-        db 10 dup(" "),"|_|\__,_/__/\___| /___|", 10, 13
+arte_f2 db 10 dup(" ")," ___               ___ ", LF, CR
+        db 10 dup(" "),"| __|_ _ ___ ___  |_  )", LF, CR
+        db 10 dup(" "),"| _/ _` (_-</ -_)  / / ", LF, CR
+        db 10 dup(" "),"|_|\__,_/__/\___| /___|", LF, CR
             
 tamanho_f2 equ $ - arte_f2
 
-arte_f3 db 10 dup(" ")," ___               ____ ", 10, 13
-        db 10 dup(" "),"| __|_ _ ___ ___  |__ / ", 10, 13
-        db 10 dup(" "),"| _/ _` (_-</ -_)  |_ \ ", 10, 13
-        db 10 dup(" "),"|_|\__,_/__/\___| |___/ ", 10, 13
+arte_f3 db 10 dup(" ")," ___               ____ ", LF, CR
+        db 10 dup(" "),"| __|_ _ ___ ___  |__ / ", LF, CR
+        db 10 dup(" "),"| _/ _` (_-</ -_)  |_ \ ", LF, CR
+        db 10 dup(" "),"|_|\__,_/__/\___| |___/ ", LF, CR
 tamanho_f3 equ $ - arte_f3
             
 ;  _____  _____  __  __  _____    _____  __ __  _____  _____ 
@@ -67,17 +93,17 @@ tamanho_f3 equ $ - arte_f3
 
 
 
-btn_jogar db 15 dup(" "),218,196,196,196,196,196,196,196,191,10,13
-          db 15 dup(" "),179,           " JOGAR ",       179,10,13
-          db 15 dup(" "),192,196,196,196,196,196,196,196,217,10,13
+btn_jogar db 15 dup(" "),218,196,196,196,196,196,196,196,191,LF,CR
+          db 15 dup(" "),179,           " JOGAR ",       179,LF,CR
+          db 15 dup(" "),192,196,196,196,196,196,196,196,217,LF,CR
           
 tamanho_jogar equ $-btn_jogar ;$-> como se fosse um contador de posicao, ao montar uma string
                               ;$ aponta para o final dela.
                               
 
-btn_sair  db 15 dup(" "),218,196,196,196,196,196,196,196,191,10,13
-          db 15 dup(" "),179,           " SAIR  ",        179,10,13
-          db 15 dup(" "),192,196,196,196,196,196,196,196,217,10,13
+btn_sair  db 15 dup(" "),218,196,196,196,196,196,196,196,191,LF,CR
+          db 15 dup(" "),179,           " SAIR  ",        179,LF,CR
+          db 15 dup(" "),192,196,196,196,196,196,196,196,217,LF,CR
 
 
 tamanho_sair equ $-btn_sair
@@ -136,8 +162,9 @@ alien  db 00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0E
        db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
 alien_tamanho equ $ - alien
 
-        
-        
+status db "SCORE:", 22 + (N_DIGITOS_PONTOS+1) - (N_DIGITIOS_TEMPO+1) dup(" "), "TEMPO:", LF, CR
+tamanho_status equ $ - status
+
 .code
 ; Funcao generica que escreve Strings com cor na tela
 ESCREVE_STRING proc 
@@ -165,6 +192,112 @@ ESCREVE_STRING proc
     pop BX
     pop AX
            
+    ret
+endp
+
+ESCREVE_NUMERO proc
+    ; Salva o contexto
+    push AX
+    push BX
+    push CX
+    push DX
+    push SI
+    push BP
+    push DI
+
+    mov DI, DX
+    mov SI, CX      ; Numero de caracteres
+    
+    mov BX, 10      ; Divisor
+    xor CX, CX
+
+    DIVIDE_LOOP:
+        xor DX, DX
+        div BX              ; AX / 10 -> Resto em DX
+        
+        push DX             ; Salva o digito na pilha
+        inc CX              ; Conta +1 digito real
+        
+        cmp AX, 0
+        jne DIVIDE_LOOP
+    
+    PREENCHE_ZEROS:
+        cmp SI, CX          ; Se Largura Desejada <= Digitos Reais
+        jle LOOP_IMPRIME    ; Entao nao precisa mais de zeros
+        
+        ; Imprime um '0'
+        push CX
+        
+        ; mov [temp_numero], '0' ; Carrega o caractere '0'
+        
+        ; Configura ESCREVE_STRING
+        mov BP, offset temp_numero ; Texto
+        mov CX, 1                  ; 1 Caractere
+        mov DX, DI                 ; Posicao Atual
+        call ESCREVE_STRING
+        
+        pop CX
+        inc DL              ; Avanca o cursor (Coluna)
+        mov DI, DX          ; Atualiza a posicao salva em DI
+        dec SI              ; Decrementa a largura pendente
+        jmp PREENCHE_ZEROS
+        
+    LOOP_IMPRIME:
+        pop AX              ; Recupera o digito (estava em DX no push)
+        push CX             ; Salva o contador do loop
+        
+        add AL, '0'         ; Converte para ASCII
+        mov [temp_numero], AL
+        
+        mov BP, offset temp_numero
+        mov CX, 1           ; Tamanho 1
+        mov DX, DI          ; Posicao Atual
+        ; BL Cor mantida
+        call ESCREVE_STRING
+        
+        pop CX              ; Restaura contador
+        
+        inc DL              ; Avanca cursor
+        mov DI, DX          ; Atualiza posi??o salva
+        
+        loop LOOP_IMPRIME   ; Decrementa CX e repete se > 0
+
+    ; Restaura contexto
+    pop DI
+    pop BP
+    pop SI
+    pop DX
+    pop CX
+    pop BX
+    pop AX
+    ret
+ESCREVE_NUMERO endp
+
+ESCREVE_BARRA_STATUS proc
+    ; Texto Score / Tempo
+    mov DH, 0
+    mov DL, 0
+    mov BL, 0FH
+    mov BP, offset status
+    mov CX, tamanho_status
+    call ESCREVE_STRING
+
+    ; Pontuacao atual
+    mov AX, pontuacao
+    mov DH, 0
+    mov DL, 7
+    mov BL, 0AH
+    mov CX, [caracteres_pontuacao]
+    call ESCREVE_NUMERO
+
+    ; Tempo restante
+    mov AX, tempo_restante
+    mov DH, 0
+    mov DL, 38
+    mov BL, 0AH
+    mov CX, [caracteres_tempo]
+    call ESCREVE_NUMERO
+    
     ret
 endp
 
@@ -218,21 +351,45 @@ VERIFICA_TECLADO_JOGO proc
     jmp FIM_TECLADO_JOGO
     
     SETA_CIMA:
+        cmp DI, [limite_topo]
+        jbe FIM_TECLADO_JOGO ; Se DI <= 3200, não sobe mais
+
         mov AX, 0 ; 0 = Cima
         call MOVER_VERTICAL
         jmp FIM_TECLADO_JOGO
         
     SETA_BAIXO:
+        cmp DI, [limite_fundo]
+        jae FIM_TECLADO_JOGO ; Se DI >= 59840, não desce mais
+
         mov AX, 1 ; 1 = Baixo
         call MOVER_VERTICAL
         jmp FIM_TECLADO_JOGO
 
     SETA_ESQUERDA:
+        ; Calcula a coluna atual (DI % 320)
+        mov AX, DI
+        xor DX, DX
+        mov BX, [largura_video]
+        div BX
+        
+        cmp DX, 0  ; Verifica se X <= 0
+        jle FIM_TECLADO_JOGO ; Se sim, não vai para a esquerda
+
         mov AX, 0 ; 0 = Esquerda
         call MOVER_HORIZONTAL
         jmp FIM_TECLADO_JOGO
 
     SETA_DIREITA:
+        ; Calcula a coluna atual (DI % 320)
+        mov AX, DI
+        xor DX, DX
+        mov BX, [largura_video]
+        div BX
+        
+        cmp DX, [limite_direita] ; Verifica se X >= 291
+        jae FIM_TECLADO_JOGO ; Se sim, não vai para a direita
+
         mov AX, 1 ; 1 = Direita
         call MOVER_HORIZONTAL
         jmp FIM_TECLADO_JOGO
@@ -291,8 +448,16 @@ CARREGA_FASE proc       ; Espera X segundos e depois limpa a tela
     ret
 endp
 
-PARTIDA proc        
+PARTIDA proc
+    call ESCREVE_BARRA_STATUS 
+    
+    mov AX, [nave_posicao]
+    mov SI, offset nave
+    call DESENHA
+
+
     JOGANDO:
+        call ESCREVE_BARRA_STATUS 
         call BUSCA_INTERACAO
         
         mov DI, [nave_posicao]
@@ -302,10 +467,9 @@ PARTIDA proc
         
         mov AX, [nave_posicao]
         mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
-        call DESENHA; RENDER_SPRITE
+        call DESENHA
         
         jmp JOGANDO
-
     ret
 endp
 
@@ -325,7 +489,7 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
         call ESCREVE_STRING
         
         call CARREGA_FASE
-        ; call PARTIDA
+        call PARTIDA
         
     JOGAR_F2:
         call LIMPA_TELA
@@ -441,8 +605,8 @@ BUSCA_INTERACAO proc ; Cria pausas para ver se houve interacao no teclado
     push CX
     push DX
     
-    xor CX, CX      ; Parte alta do tempo
-    mov DX, [fps]   ; Parte baixa do tempo
+    xor CX, CX      ; Inicia em 0
+    mov DX, [delay] ; e vai ate delay
     mov AH, 86h
     int 15h
     
@@ -623,39 +787,39 @@ RESET_ALIEN_MENU proc
     jae Y_OK 
     mov AL,90;come??a depois do meteoro
      
-Y_OK:
-    xor DX,DX
-    mov DL,AL
-    mov alien_y,DX ;passa altura minima para Y
+    Y_OK:
+        xor DX,DX
+        mov DL,AL
+        mov alien_y,DX ;passa altura minima para Y
+        
+        mov AH,255 ; max largura
+        call RAND_8
+        
+        cmp AL,50 ;coluna minima 29
+        jae X_OK
+        mov AL,50
+    X_OK:
+        xor DX,DX
+        mov DL,AL
+        mov alien_x,DX ;coluna minima para X
+        
+        
+        mov BX,320 ;adiciona 320 que o maximo de deslocamento por linha
+        
+        mov AX,alien_y ; move o valor em alien_y para AX
+        mul BX ;multiplica alien_y em AX para obter a linha correta, ja que a formula de deslocamento ? Y*320 + X
+        
+        add AX,alien_x
     
-    mov AH,255 ; max largura
-    call RAND_8
-    
-    cmp AL,50 ;coluna minima 29
-    jae X_OK
-    mov AL,50
-X_OK:
-    xor DX,DX
-    mov DL,AL
-    mov alien_x,DX ;coluna minima para X
-    
-    
-    mov BX,320 ;adiciona 320 que o maximo de deslocamento por linha
-    
-    mov AX,alien_y ; move o valor em alien_y para AX
-    mul BX ;multiplica alien_y em AX para obter a linha correta, ja que a formula de deslocamento ? Y*320 + X
-       
-    add AX,alien_x
-  
-    mov alien_posicao, AX
-    
-    mov alien_direction,1
+        mov alien_posicao, AX
+        
+        mov alien_direction,1
 
-    
+        
 
-    pop BX
-    pop DX
-    pop AX
+        pop BX
+        pop DX
+        pop AX
     
    ret
 endp 
@@ -735,7 +899,6 @@ DESENHA proc
     ret
 endp
 
-
 MENU_ANIMATION proc
     MOVE_NAVE:
         mov AX, nave_posicao
@@ -751,8 +914,6 @@ MENU_ANIMATION proc
         
         mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
         call DESENHA; RENDER_SPRITE
-    
-      
     
     MOVE_METEORO:
         mov AX, meteoro_posicao
@@ -772,8 +933,6 @@ MENU_ANIMATION proc
         mov SI, offset meteoro
         call DESENHA; RENDER_SPRIT
         
-        
-      
      MOVE_ALIEN:
     
      mov DX,alien_direction
@@ -801,7 +960,7 @@ MENU_ANIMATION proc
         
         jmp END_POS_UPDATE
         
- ALIEN_DIREITA:
+    ALIEN_DIREITA:
         mov AX, alien_posicao
         mov DI, AX;move a posicao do aliwn para DI
         mov DX,alien_x  
@@ -819,22 +978,22 @@ MENU_ANIMATION proc
         
         mov SI, offset alien
         call DESENHA; RENDER_SPRIT 
-         jmp END_POS_UPDATE
+        jmp END_POS_UPDATE
     
-  RESET_ALIEN_DIRECTION:
+    RESET_ALIEN_DIRECTION:
         mov alien_direction,2
         jmp END_POS_UPDATE
         
     RESET_ALIEN_DIRECTION_2:
-        mov alien_direction,1
+        mov alien_direction, 1
         jmp END_POS_UPDATE
         
-  RESET_NAVE_METEORO:
+    RESET_NAVE_METEORO:
         call LIMPA_13x29; apaga 13x29 na posicao DI.
         call RESET_POSICOES_MENU 
     
     END_POS_UPDATE:
-      ret
+        ret
 endp
 
 MAIN:
