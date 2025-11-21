@@ -6,50 +6,50 @@
 
 .data
     MICRO_TO_SEC EQU 1000000    ; 1 segundo = 1.000.000 microsegundos (1000 * 1000)
-    DURACAO_FASE EQU 60         ; Tempo que ira durar cada fase
+    DELAY_FRAME EQU 10000       ; 10.000us = 10ms
+    FPS EQU 100
+
+    DURACAO_FASE EQU 5         ; Tempo que ira durar cada fase
     NUMERO_VIDAS EQU 3
-    N_DIGITIOS_TEMPO EQU 2
-    N_DIGITOS_PONTOS EQU 5
+    NUMERO_DIGITOS_PONTOS EQU 5
+    NUMERO_DIGITOS_TEMPO EQU 2
+
     CR EQU 13                   ; define uma constante de valor 13
     LF EQU 10                   ; define uma constante de valor 10
     
-    ALTURA EQU 200
-    LARGURA EQU 320
+    LARGURA EQU 320             ; Largura da tela
+    ALTURA EQU 200              ; Altura da tela
 
+
+
+seed dw 0
 op_menu db 1
-
-seed dw 0 
       
-fase db 1 ;indicia fase atual 
+fase db ? ;indicia fase atual 
+
+tabela_pontuacao_tempo dw 10, 15, 25
+tabela_pontuacao_nave dw 100, 150, 250
       
 menu_selecao db 0   ; 0 = Jogar, 1 = Sair
 inicia_jogo  db 0   ; Flag para iniciar o jogo
-delay dw 1000        ; tempo em microsegundos (/10 para frames por segundo)
 tempo_tela_fase dd MICRO_TO_SEC * 1
 
 temp_numero db ?
 
 vidas dw NUMERO_VIDAS
-
-caracteres_pontuacao dw N_DIGITOS_PONTOS
 pontuacao dw 0
-
-caracteres_tempo dw N_DIGITIOS_TEMPO
-tempo_fase dw DURACAO_FASE
 tempo_restante dw DURACAO_FASE
 
-largura_video dw LARGURA
-altura_video dw ALTURA
+cont_frames dw 0 ; Frames percorridos dentro de 1s
 
 nave_posicao dw 0
-nave_inimiga_posicao dw 0
+nave_inimica_posicao dw 0
 meteoro_posicao dw 0
 
 alien_posicao dw 0
 alien_y dw 0
 alien_x dw 0
 alien_direction dw 1 ;1 = esquerda, 2 = direita
-
 
 limite_topo dw 10 * LARGURA
 limite_fundo dw (ALTURA - 13) * LARGURA
@@ -162,7 +162,7 @@ alien  db 00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0E
        db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
 alien_tamanho equ $ - alien
 
-status db "SCORE:", 22 + (N_DIGITOS_PONTOS+1) - (N_DIGITIOS_TEMPO+1) dup(" "), "TEMPO:", LF, CR
+status db "SCORE:", 22 + (NUMERO_DIGITOS_PONTOS+1) - (NUMERO_DIGITOS_TEMPO+1) dup(" "), "TEMPO:", LF, CR
 tamanho_status equ $ - status
 
 .code
@@ -228,7 +228,7 @@ ESCREVE_NUMERO proc
         ; Imprime um '0'
         push CX
         
-        ; mov [temp_numero], '0' ; Carrega o caractere '0'
+        mov [temp_numero], '0' ; Carrega o caractere '0'
         
         ; Configura ESCREVE_STRING
         mov BP, offset temp_numero ; Texto
@@ -273,29 +273,21 @@ ESCREVE_NUMERO proc
     ret
 ESCREVE_NUMERO endp
 
-ESCREVE_BARRA_STATUS proc
-    ; Texto Score / Tempo
-    mov DH, 0
-    mov DL, 0
-    mov BL, 0FH
-    mov BP, offset status
-    mov CX, tamanho_status
-    call ESCREVE_STRING
-
+ESCREVE_VALORES_HUD proc
     ; Pontuacao atual
-    mov AX, pontuacao
+    mov AX, [pontuacao]
     mov DH, 0
     mov DL, 7
     mov BL, 0AH
-    mov CX, [caracteres_pontuacao]
+    mov CX, NUMERO_DIGITOS_PONTOS
     call ESCREVE_NUMERO
 
     ; Tempo restante
-    mov AX, tempo_restante
+    mov AX, [tempo_restante]
     mov DH, 0
     mov DL, 38
     mov BL, 0AH
-    mov CX, [caracteres_tempo]
+    mov CX, NUMERO_DIGITOS_TEMPO
     call ESCREVE_NUMERO
     
     ret
@@ -352,7 +344,7 @@ VERIFICA_TECLADO_JOGO proc
     
     SETA_CIMA:
         cmp DI, [limite_topo]
-        jbe FIM_TECLADO_JOGO ; Se DI <= 3200, não sobe mais
+        jbe FIM_TECLADO_JOGO ; Se DI <= 3200, n?o sobe mais
 
         mov AX, 0 ; 0 = Cima
         call MOVER_VERTICAL
@@ -360,7 +352,7 @@ VERIFICA_TECLADO_JOGO proc
         
     SETA_BAIXO:
         cmp DI, [limite_fundo]
-        jae FIM_TECLADO_JOGO ; Se DI >= 59840, não desce mais
+        jae FIM_TECLADO_JOGO ; Se DI >= 59840, n?o desce mais
 
         mov AX, 1 ; 1 = Baixo
         call MOVER_VERTICAL
@@ -370,11 +362,11 @@ VERIFICA_TECLADO_JOGO proc
         ; Calcula a coluna atual (DI % 320)
         mov AX, DI
         xor DX, DX
-        mov BX, [largura_video]
+        mov BX, LARGURA
         div BX
         
         cmp DX, 0  ; Verifica se X <= 0
-        jle FIM_TECLADO_JOGO ; Se sim, não vai para a esquerda
+        jle FIM_TECLADO_JOGO ; Se sim, n?o vai para a esquerda
 
         mov AX, 0 ; 0 = Esquerda
         call MOVER_HORIZONTAL
@@ -384,11 +376,11 @@ VERIFICA_TECLADO_JOGO proc
         ; Calcula a coluna atual (DI % 320)
         mov AX, DI
         xor DX, DX
-        mov BX, [largura_video]
+        mov BX, LARGURA
         div BX
         
         cmp DX, [limite_direita] ; Verifica se X >= 291
-        jae FIM_TECLADO_JOGO ; Se sim, não vai para a direita
+        jae FIM_TECLADO_JOGO ; Se sim, n?o vai para a direita
 
         mov AX, 1 ; 1 = Direita
         call MOVER_HORIZONTAL
@@ -404,7 +396,7 @@ VERIFICA_TECLADO_JOGO proc
 MOVER_VERTICAL proc
     ; AX=0 (Cima), AX=1 (Baixo)
     push BX
-    mov BX, [largura_video]
+    mov BX, LARGURA
     
     cmp AX, 0
     je MOVER_CIMA
@@ -449,7 +441,19 @@ CARREGA_FASE proc       ; Espera X segundos e depois limpa a tela
 endp
 
 PARTIDA proc
-    call ESCREVE_BARRA_STATUS 
+    mov [tempo_restante], DURACAO_FASE
+    mov [cont_frames], 0  ; Zera o contador de frames
+
+    
+    ; HUD do Score / Tempo
+    mov DH, 0
+    mov DL, 0
+    mov BL, 0FH
+    mov BP, offset status
+    mov CX, tamanho_status
+    call ESCREVE_STRING
+
+    call ESCREVE_VALORES_HUD 
     
     mov AX, [nave_posicao]
     mov SI, offset nave
@@ -457,7 +461,33 @@ PARTIDA proc
 
 
     JOGANDO:
-        call ESCREVE_BARRA_STATUS 
+        inc [cont_frames]
+        cmp [cont_frames], FPS
+        jne ATUALIZA_MOVIMENTO                  ; Se n?o passou 1s, pula para movimento
+        
+        mov [cont_frames], 0   ; Reseta contador
+
+        dec [tempo_restante]
+        cmp [tempo_restante], 0
+        je SAIR_DA_FASE
+
+        push AX
+        push BX
+
+        xor BX, BX
+        mov BL, [fase]
+        dec BL
+        shl BX, 1
+
+        mov AX, tabela_pontuacao_tempo[BX]
+        add [pontuacao], AX
+        
+        pop AX
+        pop BX
+
+        call ESCREVE_VALORES_HUD
+
+    ATUALIZA_MOVIMENTO:
         call BUSCA_INTERACAO
         
         mov DI, [nave_posicao]
@@ -468,12 +498,15 @@ PARTIDA proc
         mov AX, [nave_posicao]
         mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
         call DESENHA
-        
+
         jmp JOGANDO
-    ret
+
+    SAIR_DA_FASE:
+        ret
 endp
 
 JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
+    mov [fase], 0
     cmp menu_selecao, 1
     jne JOGAR_F1
     call TERMINA_JOGO
@@ -489,6 +522,8 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
         call ESCREVE_STRING
         
         call CARREGA_FASE
+
+        inc fase
         call PARTIDA
         
     JOGAR_F2:
@@ -501,7 +536,9 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
         call ESCREVE_STRING
         
         call CARREGA_FASE
-        ; call PARTIDA
+
+        inc fase
+        call PARTIDA
         
     JOGAR_F3:
         call LIMPA_TELA
@@ -513,6 +550,8 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
         call ESCREVE_STRING
         
         call CARREGA_FASE
+
+        inc fase
         call PARTIDA
         
 
@@ -606,7 +645,7 @@ BUSCA_INTERACAO proc ; Cria pausas para ver se houve interacao no teclado
     push DX
     
     xor CX, CX      ; Inicia em 0
-    mov DX, [delay] ; e vai ate delay
+    mov DX, DELAY_FRAME ; e vai at? delay
     mov AH, 86h
     int 15h
     
@@ -933,6 +972,8 @@ MENU_ANIMATION proc
         mov SI, offset meteoro
         call DESENHA; RENDER_SPRIT
         
+        
+     ;refazer    
      MOVE_ALIEN:
     
      mov DX,alien_direction
@@ -967,7 +1008,7 @@ MENU_ANIMATION proc
         ;push AX
         cmp DX,291 ;Chegou na borda da esquerda     
         ;pop AX     
-        je RESET_ALIEN_DIRECTION_2
+        je RESET_ALIEN
         
         call LIMPA_13x29; apaga 13x29 na posicao DI.
             
@@ -984,8 +1025,9 @@ MENU_ANIMATION proc
         mov alien_direction,2
         jmp END_POS_UPDATE
         
-    RESET_ALIEN_DIRECTION_2:
-        mov alien_direction, 1
+    RESET_ALIEN:
+        call LIMPA_13x29
+        call RESET_ALIEN_MENU
         jmp END_POS_UPDATE
         
     RESET_NAVE_METEORO:
