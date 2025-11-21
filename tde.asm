@@ -463,13 +463,9 @@ PARTIDA proc
     JOGANDO:
         inc [cont_frames]
         cmp [cont_frames], FPS
-        jne ATUALIZA_MOVIMENTO                  ; Se n?o passou 1s, pula para movimento
+        jne ATUALIZA_MOVIMENTO                  ; Se nao passou 1s, pula para movimento
         
         mov [cont_frames], 0   ; Reseta contador
-
-        dec [tempo_restante]
-        cmp [tempo_restante], 0
-        je SAIR_DA_FASE
 
         push AX
         push BX
@@ -480,10 +476,14 @@ PARTIDA proc
         shl BX, 1
 
         mov AX, tabela_pontuacao_tempo[BX]
-        add [pontuacao], AX
+        add [pontuacao], AX     ; Adiciona os pontos por tempo de sobreviencia
         
         pop AX
         pop BX
+
+        dec [tempo_restante]
+        cmp [tempo_restante], 0
+        je SAIR_DA_FASE
 
         call ESCREVE_VALORES_HUD
 
