@@ -54,7 +54,26 @@ alien_direction dw 1 ;1 = esquerda, 2 = direita
 limite_topo dw 10 * LARGURA
 limite_fundo dw (ALTURA - 13) * LARGURA
 limite_direita dw LARGURA - 29 
-      
+
+
+vidas_vetor db 3 dup(1) ;vida = 1 , sem vida = 0
+
+vida_posicao_x db 132 ;vetor de posicao de cada vida
+               db 152
+               db 172
+    
+                                       
+vida db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H
+     db 00H,09H,09H,09H,0CH,0CH,0CH,0CH,0CH,00H,0EH,00H,00H,0EH,0EH,00H
+     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,00H,0EH,0EH,00H,0EH
+     db 0EH,0EH,0EH,0EH,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H,00H,00H,00H,00H
+     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH
+     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H
+     db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H,00H,00H
+
+vida_tamanho equ $-vida
+               
+               
 arte_titulo db 3 dup(" ")," ___                    _    _     ", LF, CR
             db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", LF, CR
             db 3 dup(" "),"\__ \/ _| '_/ _` | '  \| '_ \ / -_)", LF, CR
@@ -454,6 +473,7 @@ PARTIDA proc
     call ESCREVE_STRING
 
     call ESCREVE_VALORES_HUD 
+    call MOSTRAR_VIDAS
     
     mov AX, [nave_posicao]
     mov SI, offset nave
@@ -937,6 +957,91 @@ DESENHA proc
      
     ret
 endp
+
+
+; AX = posicao atual do elemento
+; SI = offset do elemento no DS
+DESENHA_7x16 proc
+     push BX
+     push CX
+     push DX
+     push DI
+     push ES
+     push DS
+     push AX ;salva a posicao
+      
+     mov AX, @data
+     mov DS, AX
+     
+     mov AX, 0A000H;SEGMENTO DE VIDEO
+     mov ES, AX
+     
+     
+     pop AX ;volta a posicao salva
+     mov DI, AX
+     MOV DX, 7 ;altura
+     
+     push AX
+     
+ LINHA_LOOP2:
+         mov CX, 16 ;largura
+         rep movsb ;DS:SI -> ES:DI 
+         add DI, 320-16  ;+320 avanca 1 linha - tamanho do elemento
+         
+         dec DX ;terminou uma linha decrementa o contador de altura 
+         jnz LINHA_LOOP2 
+         
+    pop AX
+    pop DS
+    pop ES
+    pop DI
+    pop DX
+    pop CX
+    pop BX
+     
+    ret
+endp
+
+MOSTRAR_VIDAS proc
+    push ax
+    push bx
+    push cx
+    push dx
+    push si
+
+       
+    xor  BX, BX
+    xor AX,AX
+    mov  CX, 3 ; tr?s vidas
+
+DESENHAR_LOOP2:
+      lea  si, vida  
+
+    
+      mov  AL, [vidas_vetor+bx]
+      cmp  AX, 0
+    je   PROXIMA_VIDA ; se destru?da, s? avan?a
+
+   
+    mov  AL, [vida_posicao_x+BX] ;vida_posicao_x = vetor de posicoes na tela de cada vida
+
+
+    ;AX = posicao na tela
+    ;SI = offset no .data do desenho da vida
+    call DESENHA_7x16
+
+PROXIMA_VIDA:
+    inc  bx
+    loop DESENHAR_LOOP2
+
+    pop  si
+    pop  dx
+    pop  cx
+    pop  bx
+    pop  ax
+    ret
+endp
+
 
 MENU_ANIMATION proc
     MOVE_NAVE:
