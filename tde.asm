@@ -57,7 +57,7 @@ limite_direita dw LARGURA - 29
 
 
 vidas_vetor db 3 dup(1) ;vida = 1 , sem vida = 0
-
+vidas_qtd db 3
 vida_posicao_x db 132 ;vetor de posicao de cada vida
                db 152
                db 172
@@ -1002,6 +1002,58 @@ DESENHA_7x16 proc
     ret
 endp
 
+
+;Proc que diminui a quantidade de vidas do header baseando-se 
+;em vidas_qtd
+DIMINUIR_VIDA proc
+    push AX
+    push BX
+    push CX
+    push DX
+    push DI
+    push ES
+    
+    mov AX, 0A000H
+    mov ES, AX
+    
+    xor BX,BX
+    xor AX,AX
+    
+    mov AL, vidas_qtd
+    cmp AL, 0
+    jz DIMINUIR_FIM ;se a quantidade de vidas = 0 entao pula
+    
+    dec AL ; 0..2
+    mov vidas_qtd, AL ;atualiza qtd
+    
+    mov BL,AL ;BL usado como indice
+    mov vidas_vetor[BX],0
+    
+    mov AL, vida_posicao_x[BX] ;DI = posicao atual da vida na tela
+    mov DI,AX
+    mov DX, 7 
+
+DIMINUIR_VIDA_LOOP:
+    mov CX,16
+    mov AL,0
+    rep stosb ;STOSB ESCREVE AL EM ES:DI, CX vezes
+    
+    add DI, 320-16
+    dec DX
+    jnz DIMINUIR_VIDA_LOOP
+    
+    
+DIMINUIR_FIM:
+    pop ES
+    pop DI
+    pop DX
+    pop CX
+    pop BX
+    pop AX
+    
+    ret
+endp
+
 MOSTRAR_VIDAS proc
     push ax
     push bx
@@ -1160,5 +1212,7 @@ MAIN:
     int 10H
     
     call JOGO
+    
+    
     
 end MAIN
