@@ -1,15 +1,13 @@
 .model small
 
-
 .stack 100H
-
 
 .data
     MICRO_TO_SEC EQU 1000000    ; 1 segundo = 1.000.000 microsegundos (1000 * 1000)
     DELAY_FRAME EQU 10000       ; 10.000us = 10ms
     FPS EQU 100
 
-    DURACAO_FASE EQU 5         ; Tempo que ira durar cada fase
+    DURACAO_FASE EQU 5          ; Tempo que ira durar cada fase
     NUMERO_VIDAS EQU 3
     NUMERO_DIGITOS_PONTOS EQU 5
     NUMERO_DIGITOS_TEMPO EQU 2
@@ -23,15 +21,15 @@
 
     MAX_INIMIGOS          EQU 5
     DELAY_SPAWN_INIMIGO   EQU 50
-    VELOCIDADE    EQU 1   ; Quanto maior, mais rapido
+    VELOCIDADE            EQU 1 ; Quanto maior, mais rapido
 
 seed dw 0
 op_menu db 1
       
 fase db ?
 
-tabela_pontuacao_tempo dw 10, 15, 25
-tabela_pontuacao_nave dw 100, 150, 250
+tabela_pontuacao_tempo dw 10, 15, 20
+tabela_pontuacao_nave dw 100, 0, 150
       
 menu_selecao db 0   ; 0 = Jogar, 1 = Sair
 inicia_jogo  db 0   ; Flag para iniciar o jogo
@@ -116,21 +114,13 @@ tamanho_f3 equ $ - arte_f3
 btn_jogar db 15 dup(" "),218,196,196,196,196,196,196,196,191,LF,CR
           db 15 dup(" "),179,           " JOGAR ",       179,LF,CR
           db 15 dup(" "),192,196,196,196,196,196,196,196,217,LF,CR
-          
-tamanho_jogar equ $-btn_jogar ;$-> como se fosse um contador de posicao, ao montar uma string
-                              ;$ aponta para o final dela.
-                              
+tamanho_jogar equ $-btn_jogar                         
 
 btn_sair  db 15 dup(" "),218,196,196,196,196,196,196,196,191,LF,CR
           db 15 dup(" "),179,           " SAIR  ",        179,LF,CR
           db 15 dup(" "),192,196,196,196,196,196,196,196,217,LF,CR
-
-
 tamanho_sair equ $-btn_sair
 
-
-;FORMULA BASICA DE POSICIONAMENTO NA TELA: LINHA * 320 + COLUNA.
-; 13 linhas x 29 colunas
 nave db 09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
      db 00H,09H,09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,0CH,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H,00H,00H,00H
      db 00H,00H,08H,09H,09H,09H,09H,09H,09H,00H,00H,00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,0EH,0EH,0EH,0EH,0EH,00H,00H,00H
@@ -144,12 +134,8 @@ nave db 09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,
      db 00H,08H,09H,09H,09H,09H,09H,09H,01H,00H,00H,00H,06H,06H,06H,0CH,0CH,0CH,0CH,06H,06H,06H,06H,06H,08H,00H,00H,00H,00H
      db 00H,09H,09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,06H,06H,06H,06H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
      db 09H,09H,09H,09H,09H,09H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
-
 nave_tamanho equ $-nave
 
-
-; ========= METEORO 13x29 (valores em 00H..0FH) =========
-; 13 linhas x 29 colunas
 meteoro db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,08H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
         db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,0DH,0DH,0DH,05H,05H,08H,00H,00H,05H,05H,00H,00H,00H,00H,00H,00H,00H,00H
         db 00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,0CH,0DH,05H,05H,05H,0CH,0CH,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
@@ -163,23 +149,21 @@ meteoro db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,08H,0
         db 00H,00H,00H,00H,00H,00H,00H,05H,0DH,0DH,0CH,0CH,0CH,0CH,0CH,05H,05H,05H,00H,00H,0CH,0CH,00H,00H,00H,00H,00H,00H,00H
         db 00H,00H,00H,00H,00H,00H,00H,00H,08H,08H,05H,05H,05H,05H,0CH,08H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
         db 00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,05H,05H,05H,05H,05H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
-
 meteoro_tamanho equ $-meteoro
 
-
-alien  db 00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00H
-       db 00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00H
-       db 00h,00h,00h,00h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00H
-       db 00h,00h,00h,00h,02h,02h,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,00h,00h,00h,00H
-       db 00h,00h,02h,02h,02h,02h,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00H
-       db 00h,00h,02h,02h,02h,02h,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00H
-       db 02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh
-       db 02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0EH
-       db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
-       db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
-       db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
-       db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
-       db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
+alien db 00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00H
+      db 00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00H
+      db 00h,00h,00h,00h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00H
+      db 00h,00h,00h,00h,02h,02h,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,00h,00h,00h,00H
+      db 00h,00h,02h,02h,02h,02h,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00H
+      db 00h,00h,02h,02h,02h,02h,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,0Eh,00h,00H
+      db 02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh
+      db 02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,02H,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0Eh,0EH
+      db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
+      db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
+      db 00h,00h,00h,00h,05h,05h,05h,0Dh,02h,02h,0Ah,0Eh,0Eh,0Eh,05h,05h,05h,0Dh,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00H
+      db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
+      db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
 alien_tamanho equ $ - alien
 
 status db "SCORE:", 22 + (NUMERO_DIGITOS_PONTOS+1) - (NUMERO_DIGITOS_TEMPO+1) dup(" "), "TEMPO:", LF, CR
@@ -200,8 +184,6 @@ terreno_1 db 452 dup(00H), 1 dup(0EH), 27 dup(00H)
           db 60 dup(09H), 4 dup(0EH), 1 dup(09H), 6 dup(0EH), 5 dup(09H), 12 dup(0EH), 4 dup(09H), 1 dup(0EH), 6 dup(09H), 1 dup(0EH), 3 dup(09H), 1 dup(0EH), 32 dup(09H), 1 dup(0EH), 69 dup(09H), 1 dup(0EH), 1 dup(09H), 2 dup(0EH), 11 dup(09H), 4 dup(0EH), 1 dup(09H), 2 dup(0EH), 1 dup(09H), 4 dup(0EH), 77 dup(09H), 6 dup(0EH), 1 dup(09H), 1 dup(0EH), 8 dup(09H), 4 dup(0EH), 2 dup(09H), 7 dup(0EH), 2 dup(09H), 1 dup(0EH), 55 dup(09H), 1 dup(0EH), 1 dup(09H), 1 dup(0EH), 67 dup(09H), 1 dup(0EH), 2 dup(09H), 10 dup(0EH)
           db 60 dup(09H), 4 dup(0EH), 1 dup(09H), 6 dup(0EH), 5 dup(09H), 12 dup(0EH), 4 dup(09H), 1 dup(0EH), 6 dup(09H), 1 dup(0EH), 3 dup(09H), 1 dup(0EH), 32 dup(09H), 1 dup(0EH), 69 dup(09H), 1 dup(0EH), 1 dup(09H), 2 dup(0EH), 11 dup(09H), 4 dup(0EH), 1 dup(09H), 2 dup(0EH), 1 dup(09H), 4 dup(0EH), 77 dup(09H), 6 dup(0EH), 1 dup(09H), 1 dup(0EH), 8 dup(09H), 4 dup(0EH), 2 dup(09H), 7 dup(0EH), 2 dup(09H), 1 dup(0EH), 55 dup(09H), 1 dup(0EH), 1 dup(09H), 1 dup(0EH), 67 dup(09H), 1 dup(0EH), 2 dup(09H), 10 dup(0EH)
           db 38 dup (LARGURA_CENARIO dup(09H))
-
-        
 
 terreno_predios db 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 2 dup(07H), 240 dup(00H), 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 2 dup(07H)
                 db 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 2 dup(07H), 240 dup(00H), 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 2 dup(07H)
@@ -315,7 +297,7 @@ terreno_predios db 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8
                 db 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H)
                 db LARGURA_CENARIO dup(00H)
 
-altura_terrenos dw 49,49,81
+altura_terrenos dw 49, 49, 81
 terrenos_ptrs  dw  offset terreno_1, OFFSET terreno_1, OFFSET terreno_predios
 linhas_ptrs    dw  48320, 48320, 38080
 
@@ -626,15 +608,30 @@ SPAWN_INIMIGO proc
         jmp PROCURA_VAGA
 
     GERAR:
-        mov AH, 130
+        push BX
+
+        xor BX, BX
+        mov BL, [fase]
+        dec BL
+        shl BX, 1
+
+        mov CX, altura_terrenos[BX]
+
+        pop BX
+
+        mov AX, ALTURA -10 -13 ; ALTURA - HUD - NAVE
+        sub AX, CX
+        mov AH, AL
         call RAND_8
-        add AL, 20
+        add AL, 10
         xor AH, AH
-        
+
+        push CX
         mov CX, LARGURA
         mul CX
+        pop CX
         
-        add AX, LARGURA-29
+        add AX, limite_direita
         
         mov aliens_posicao[BX], AX
         mov aliens_ativo[SI], 1
