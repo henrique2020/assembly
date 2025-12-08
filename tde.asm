@@ -734,6 +734,7 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
         call CARREGA_FASE
 
         inc fase
+        call DIMINUIR_VIDA
         call PARTIDA
         
     JOGAR_F3:
@@ -748,6 +749,7 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
         call CARREGA_FASE
 
         inc fase
+        call DIMINUIR_VIDA
         call PARTIDA
         
 
@@ -1305,8 +1307,7 @@ MENU_ANIMATION proc
         mov SI, offset meteoro
         call DESENHA; RENDER_SPRIT
         
-        
-     ;refazer    
+     
      MOVE_ALIEN:
     
      mov DX,alien_direction
@@ -1330,7 +1331,7 @@ MENU_ANIMATION proc
         dec alien_x
         
         mov SI, offset alien
-        call DESENHA; RENDER_SPRIT
+        call DESENHA
         
         jmp END_POS_UPDATE
         
@@ -1360,7 +1361,7 @@ MENU_ANIMATION proc
         
     RESET_ALIEN:
         call LIMPA_13x29
-        call RESET_ALIEN_MENU
+        mov alien_direction,1
         jmp END_POS_UPDATE
         
     RESET_NAVE_METEORO:
@@ -1413,7 +1414,7 @@ ENDP
 ;SI = OFFSET DO TERRENO
 ;DX = LINHA INICIAL DO DESENHO
 TERRENO_MOV proc   
-    add scroll_cenario,3        ; Incrementa o deslocamento (move o inicio do desenho pra esquerda ), quanto maior o valor aqui, mais rapido parece que o cenario se movimenta10
+    add scroll_cenario,50       ; Incrementa o deslocamento (move o inicio do desenho pra esquerda ), quanto maior o valor aqui, mais rapido parece que o cenario se movimenta10
 
     cmp scroll_cenario, 480         ; Se desloc_cen >= 480, reseta o cen?rio
     jl continua_movimento       ; Se desloc_cen < 480, continua o movimento
