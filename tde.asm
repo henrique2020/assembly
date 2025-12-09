@@ -3,75 +3,86 @@
 .stack 100H
 
 .data
-    MICRO_TO_SEC EQU 1000000    ; 1 segundo = 1.000.000 microsegundos (1000 * 1000)
-    DELAY_FRAME EQU 10000       ; 10.000us = 10ms
-    FPS EQU 100
+    MICRO_TO_SEC            EQU 1000000 ; 1 segundo = 1.000.000 microsegundos (1000 * 1000)
+    DELAY_FRAME             EQU 10000   ; 10.000us = 10ms
+    FPS                     EQU 100
 
-    DURACAO_FASE EQU 5          ; Tempo que ira durar cada fase
-    NUMERO_VIDAS EQU 3
-    NUMERO_DIGITOS_PONTOS EQU 5
-    NUMERO_DIGITOS_TEMPO EQU 2
+    DURACAO_FASE            EQU 5       ; Tempo que ira durar cada fase
+    NUMERO_VIDAS            EQU 3
+    NUMERO_DIGITOS_PONTOS   EQU 5
+    NUMERO_DIGITOS_TEMPO    EQU 2
 
-    CR EQU 13                   ; define uma constante de valor 13
-    LF EQU 10                   ; define uma constante de valor 10
-    
-    LARGURA EQU 320             ; Largura da tela
-    ALTURA EQU 200              ; Altura da tela
-    LARGURA_CENARIO EQU 480     ; Largura total do cenario
+    LARGURA                 EQU 320     ; Largura da tela
+    ALTURA                  EQU 200     ; Altura da tela
+    LARGURA_CENARIO         EQU 480     ; Largura total do cenario
 
-    MAX_INIMIGOS          EQU 5
-    DELAY_SPAWN_INIMIGO   EQU 50
-    VELOCIDADE            EQU 1 ; Quanto maior, mais rapido
+    MAX_INIMIGOS            EQU 5
+    DELAY_SPAWN_INIMIGO     EQU 50
+    VELOCIDADE              EQU 1       ; Quanto maior, mais rapido
 
-seed dw 0
-op_menu db 1
-      
-fase db ?
+    MAX_TIROS               EQU 3
+    VELOCIDADE_TIRO         EQU 4
 
+    CR                      EQU 13      ; define uma constante de valor 13
+    LF                      EQU 10      ; define uma constante de valor 10
+
+tempo_tela_fase dd MICRO_TO_SEC * 1
 tabela_pontuacao_tempo dw 10, 15, 20
 tabela_pontuacao_nave dw 100, 0, 150
-      
+
+
+seed dw 0
 menu_selecao db 0   ; 0 = Jogar, 1 = Sair
-inicia_jogo  db 0   ; Flag para iniciar o jogo
-tempo_tela_fase dd MICRO_TO_SEC * 1
 
 temp_numero db ?
+
+; Dentro da partida
+fase db ?
 pontuacao dw 0
 tempo_restante dw DURACAO_FASE
 
 vidas db NUMERO_VIDAS
-vidas_vetor db NUMERO_VIDAS dup(1) ;vida = 1 , sem vida = 0
-vida_posicao_x db 132 ;vetor de posicao de cada vida
+vidas_vetor db NUMERO_VIDAS dup(1)          ; 1=Com vida, 0=Sem vida
+vida_posicao_x db 132
                db 152
                db 172
 
-inimigos_ativos      db MAX_INIMIGOS dup(0) ; 0=Morto, 1=Vivo
-inimigos_posicao    dw MAX_INIMIGOS dup(0) ;
+inimigos_ativo      db MAX_INIMIGOS dup(0)  ; 0=Morto, 1=Vivo
+inimigos_posicao    dw MAX_INIMIGOS dup(0)
 timer_spawn_inimigo dw 0
 
-cont_frames dw 0 ; Frames percorridos dentro de 1s
+tiros_ativo         db MAX_TIROS dup(0)     ; 0=Livre, 1=Em uso
+tiros_posicao       dw MAX_TIROS dup(0)
 
+cont_frames dw 0                            ; Frames percorridos dentro de 1s
+
+; Movimento no menu
 nave_posicao dw 0
-nave_inimica_posicao dw 0
 meteoro_posicao dw 0
-
 alien_posicao dw 0
 alien_y dw 0
 alien_x dw 0
-alien_direction dw 1 ;1 = esquerda, 2 = direita
+alien_direction dw 1                        ; 1=ESQ, 2=DIR
 
+altura_terrenos dw 49, 49, 81
+terrenos_ptrs   dw  offset terreno_1, OFFSET terreno_1, OFFSET terreno_predios
+linhas_ptrs     dw  48320, 48320, 38080
+
+; limites da tela jogavel
 limite_topo dw 10 * LARGURA
 limite_fundo dw (ALTURA - 13) * LARGURA
 limite_direita dw LARGURA - 29 
-vida db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H
-     db 00H,09H,09H,09H,0CH,0CH,0CH,0CH,0CH,00H,0EH,00H,00H,0EH,0EH,00H
-     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,00H,0EH,0EH,00H,0EH
-     db 0EH,0EH,0EH,0EH,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H,00H,00H,00H,00H
-     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH
-     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H
-     db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H,00H,00H
+            
+;  _____  _____  __  __  _____    _____  __ __  _____  _____ 
+; /   __\/  _  \/  \/  \/   __\  /  _  \/  |  \/   __\/  _  \
+; |  |_ ||  _  ||  \/  ||   __|  |  |  |\  |  /|   __||  _  <
+; \_____/\__|__/\__ \__/\_____/  \_____/ \___/ \_____/\__|\_/
+;  __ __  _____  _____  _____  _____  _____  _____  _____    
+; /  |  \/   __\/  _  \/     \/   __\|  _  \/  _  \/  _  \   
+; \  |  /|   __||  |  ||  |--||   __||  |  ||  |  ||  _  <   
+;  \___/ \_____/\__|__/\_____/\_____/|_____/\_____/\__|\_/   
 
-vida_tamanho equ $-vida
+; SPRITES
 arte_titulo db 3 dup(" ")," ___                    _    _     ", LF, CR
             db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", LF, CR
             db 3 dup(" "),"\__ \/ _| '_/ _` | '  \| '_ \ / -_)", LF, CR
@@ -98,17 +109,6 @@ arte_f3 db 10 dup(" ")," ___               ____ ", LF, CR
         db 10 dup(" "),"| _/ _` (_-</ -_)  |_ \ ", LF, CR
         db 10 dup(" "),"|_|\__,_/__/\___| |___/ ", LF, CR
 tamanho_f3 equ $ - arte_f3
-            
-;  _____  _____  __  __  _____    _____  __ __  _____  _____ 
-; /   __\/  _  \/  \/  \/   __\  /  _  \/  |  \/   __\/  _  \
-; |  |_ ||  _  ||  \/  ||   __|  |  |  |\  |  /|   __||  _  <
-; \_____/\__|__/\__ \__/\_____/  \_____/ \___/ \_____/\__|\_/
-;  __ __  _____  _____  _____  _____  _____  _____  _____    
-; /  |  \/   __\/  _  \/     \/   __\|  _  \/  _  \/  _  \   
-; \  |  /|   __||  |  ||  |--||   __||  |  ||  |  ||  _  <   
-;  \___/ \_____/\__|__/\_____/\_____/|_____/\_____/\__|\_/   
-
-
 
 btn_jogar db 15 dup(" "),218,196,196,196,196,196,196,196,191,LF,CR
           db 15 dup(" "),179,           " JOGAR ",       179,LF,CR
@@ -167,6 +167,16 @@ alien_tamanho equ $ - alien
 
 status db "SCORE:", 22 + (NUMERO_DIGITOS_PONTOS+1) - (NUMERO_DIGITOS_TEMPO+1) dup(" "), "TEMPO:", LF, CR
 tamanho_status equ $ - status
+
+vida db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H
+     db 00H,09H,09H,09H,0CH,0CH,0CH,0CH,0CH,00H,0EH,00H,00H,0EH,0EH,00H
+     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,0EH,00H,0EH,0EH,00H,0EH
+     db 0EH,0EH,0EH,0EH,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H,00H,00H,00H,00H
+     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH
+     db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H
+     db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H,00H,00H
+
+vida_tamanho equ $-vida
 
 scroll_cenario dw 0
 
@@ -295,10 +305,6 @@ terreno_predios db 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8
                 db 8 dup(0BH), 2 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 2 dup(07H), 8 dup(0BH), 2 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 2 dup(07H), 8 dup(0BH), 2 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 2 dup(07H), 8 dup(0BH), 2 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 2 dup(07H), 8 dup(0BH), 2 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 2 dup(07H), 8 dup(0BH), 2 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 2 dup(07H), 8 dup(0BH), 2 dup(07H)
                 db 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H), 2 dup(00H), 8 dup(04H), 2 dup(00H), 12 dup(07H)
                 db LARGURA_CENARIO dup(00H)
-
-altura_terrenos dw 49, 49, 81
-terrenos_ptrs  dw  offset terreno_1, OFFSET terreno_1, OFFSET terreno_predios
-linhas_ptrs    dw  48320, 48320, 38080
 
 .code
 ; Funcao generica que escreve Strings com cor na tela
@@ -643,7 +649,6 @@ SPAWN_INIMIGO proc
         pop AX
         ret
 endp
-
 MOVE_INIMIGOS proc
     inc [timer_spawn_inimigo]
     cmp [timer_spawn_inimigo], DELAY_SPAWN_INIMIGO
@@ -731,12 +736,12 @@ PARTIDA proc
 
     xor BX, BX
     mov BL, [fase]
-    cmp BX,2
+    cmp BX, 2
     jne NAO_TROCA_COR
     
     dec BL
     shl BX, 1
-    cmp BX,2
+    cmp BX, 2
     jne NAO_TROCA_COR
   
     mov SI,terrenos_ptrs[BX];indice indo de 0...2
@@ -805,6 +810,7 @@ NAO_TROCA_COR:
         call DESENHA
 
         call MOVE_INIMIGOS
+        call MOVE_TIROS
 
         mov BL, [fase] ; fases numeradas a partir de 1
         dec BL ; vira ?ndice 0..N-1
@@ -829,7 +835,6 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
     call TERMINA_JOGO
     
     JOGAR_F1:
-        xor inicia_jogo, 1
         call LIMPA_TELA
         mov DH, 10
         mov DL, 0
@@ -1008,9 +1013,8 @@ endp
 ESCREVE_BOTOES proc
     push AX
     
-    mov BL, 0FH ;cor
-    mov AH, op_menu
-    
+    mov BL, 0FH
+    mov AH, menu_selecao
     cmp AH, 1     
     
     jne INICIA_BTN
@@ -1020,12 +1024,12 @@ ESCREVE_BOTOES proc
         mov BP, offset btn_jogar 
         mov CX, tamanho_jogar
         
-        xor DL,DL ;coluna = 0 | Modo 13h (320?200): grade 40?25 (colunas 0..39, linhas 0..24).
-        mov DH,18 ;linha = 18 |
+        xor DL, DL
+        mov DH, 18
         call ESCREVE_STRING
         
         mov BL, 0FH
-        mov AH, op_menu
+        mov AH, menu_selecao
         cmp AH, 0
         jne SAIR_BTN
         mov BL, 0CH
@@ -1033,8 +1037,8 @@ ESCREVE_BOTOES proc
     SAIR_BTN:
        mov BP, offset btn_sair
        mov CX, tamanho_sair
-       xor DL, DL ;colunha =0;
-       mov DH, 21 ;linha
+       xor DL, DL
+       mov DH, 21
        call ESCREVE_STRING
        
    pop AX
