@@ -45,10 +45,9 @@ vida_posicao_x db 132 ;vetor de posicao de cada vida
                db 152
                db 172
 
-aliens_ativo      db MAX_INIMIGOS dup(0) ; 0=Morto, 1=Vivo
-aliens_posicao    dw MAX_INIMIGOS dup(0) ; ONDE O ALIEN EST?? (Offset)
-aliens_dir        db MAX_INIMIGOS dup(0) ; 1=Esq, 2=Dir
-timer_spawn_alien dw 0
+inimigos_ativos      db MAX_INIMIGOS dup(0) ; 0=Morto, 1=Vivo
+inimigos_posicao    dw MAX_INIMIGOS dup(0) ;
+timer_spawn_inimigo dw 0
 
 cont_frames dw 0 ; Frames percorridos dentro de 1s
 
@@ -600,7 +599,7 @@ SPAWN_INIMIGO proc
         cmp SI, MAX_INIMIGOS
         je FIM_SPAWN
         
-        cmp aliens_ativo[SI], 0
+        cmp inimigos_ativos[SI], 0
         je GERAR
         
         inc SI
@@ -619,7 +618,7 @@ SPAWN_INIMIGO proc
 
         pop BX
 
-        mov AX, ALTURA -10 -13 ; ALTURA - HUD - NAVE
+        mov AX, ALTURA -10 -13 ; ALTURA - HUD - SPRITE
         sub AX, CX
         mov AH, AL
         call RAND_8
@@ -633,8 +632,8 @@ SPAWN_INIMIGO proc
         
         add AX, limite_direita
         
-        mov aliens_posicao[BX], AX
-        mov aliens_ativo[SI], 1
+        mov inimigos_posicao[BX], AX
+        mov inimigos_ativos[SI], 1
 
     FIM_SPAWN:
         pop SI
@@ -646,11 +645,11 @@ SPAWN_INIMIGO proc
 endp
 
 MOVE_INIMIGOS proc
-    inc [timer_spawn_alien]
-    cmp [timer_spawn_alien], DELAY_SPAWN_INIMIGO
+    inc [timer_spawn_inimigo]
+    cmp [timer_spawn_inimigo], DELAY_SPAWN_INIMIGO
     jl INICIA_LOOP_MOVIMENTO
     
-    mov [timer_spawn_alien], 0
+    mov [timer_spawn_inimigo], 0
     call SPAWN_INIMIGO
 
     INICIA_LOOP_MOVIMENTO:
@@ -661,35 +660,44 @@ MOVE_INIMIGOS proc
         cmp SI, MAX_INIMIGOS
         je SAI_GERENCIA
 
-        cmp aliens_ativo[SI], 1
+        cmp inimigos_ativos[SI], 1
         jne PROXIMO_INIMIGO
 
-        mov DI, aliens_posicao[BX]
+        mov DI, inimigos_posicao[BX]
         call LIMPA_13x29
         
-        ; Passo A: Calcular X atual (Offset % 320)
-        mov AX, aliens_posicao[BX]
+        mov AX, inimigos_posicao[BX]
         xor DX, DX
         push BX
         mov BX, LARGURA
         div BX
         pop BX
     
-        cmp DX, VELOCIDADE  ; Velocidade de movimento
+        cmp DX, VELOCIDADE
         jbe MATAR_INIMIGO
         
-        sub aliens_posicao[BX], VELOCIDADE
+        sub inimigos_posicao[BX], VELOCIDADE
         
-        mov AX, aliens_posicao[BX]
+        mov AX, inimigos_posicao[BX]
         push SI
+
+        cmp [fase], 2
+        je DESENHA_METEORO
+
         mov SI, offset alien
-        call DESENHA
-        pop SI
+        jmp DESENHA_INIMIGO
+
+        DESENHA_METEORO:
+            mov SI, offset meteoro
+
+        DESENHA_INIMIGO:
+            call DESENHA
+            pop SI
         
         jmp PROXIMO_INIMIGO
 
     MATAR_INIMIGO:
-        mov aliens_ativo[SI], 0
+        mov inimigos_ativos[SI], 0
 
     PROXIMO_INIMIGO:
         inc SI
@@ -717,7 +725,7 @@ PARTIDA proc
     mov CX, MAX_INIMIGOS
     xor SI, SI
     ZERA_INIMIGOS:
-        mov aliens_ativo[SI], 0
+        mov inimigos_ativos[SI], 0
         inc SI
         loop ZERA_INIMIGOS
 
