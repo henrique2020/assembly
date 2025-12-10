@@ -14,7 +14,7 @@
 | **Geral**    | Tela do Jogo - Mudança de fase     |      3%      | ✅ | ✅ |    |
 | **Fase 1**   | Apresentação dos elementos        |      4%      | ✅ | ✅ |    |
 | **Fase 1**   | Movimentação da nave aliada "jet" |      6%      | ✅ | ✅ |    |
-| **Fase 1**   | Tiro da Nave                        |      6%      |    |    | ❌ |
+| **Fase 1**   | Tiro da Nave                        |      6%      |    | ✅ |    |
 | **Fase 1**   | Naves Inimigas                      |      6%      | ✅ | ✅ |    |
 | **Fase 1**   | Detecção de colisão              |      5%      |    |    | ❌ |
 | **Fase 1**   | Barra de status                     |      5%      | ✅ | ✅ |    |

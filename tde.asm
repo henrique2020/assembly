@@ -1,5 +1,4 @@
 .model small
-
 .stack 100H
 
 .data
@@ -20,7 +19,7 @@
     DELAY_SPAWN_INIMIGO     EQU 50
     VELOCIDADE              EQU 1       ; Quanto maior, mais rapido
 
-    MAX_TIROS               EQU 3
+    MAX_TIROS               EQU 5
     VELOCIDADE_TIRO         EQU 4
 
     CR                      EQU 13      ; define uma constante de valor 13
@@ -307,7 +306,16 @@ terreno_predios db 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8
                 db LARGURA_CENARIO dup(00H)
 
 .code
-; Funcao generica que escreve Strings com cor na tela
+
+; =================================================================
+; Escreve uma string na tela utilizando a interrupção 10h (AH=13h).
+; Entrada: 
+;   BP = Offset da string
+;   CX = Tamanho da string
+;   DH, DL = Posição (Linha, Coluna)
+;   BL = Atributo de cor
+; Saida: Nenhum
+; =================================================================
 ESCREVE_STRING proc 
     push AX
     push BX
@@ -320,11 +328,11 @@ ESCREVE_STRING proc
     mov BX, DS
     mov ES, BX
 
-    mov AH, 13h ;escreve string com atributos de cor
-    mov AL, 01h ;modo: atualiza o cursor apos a escrita   
+    mov AH, 13h 
+    mov AL, 01h 
     pop BX  
-    xor BH, BH  ;pagina de video 0
-    int 10h     ; Interrupcao para escrever a string
+    xor BH, BH  
+    int 10h     
     
     pop BP
     pop SI
@@ -332,12 +340,19 @@ ESCREVE_STRING proc
     pop DS
     pop BX
     pop AX
-           
     ret
 endp
 
+; =================================================================
+; Converte um valor numérico de 16 bits em caracteres ASCII e o imprime na tela, preenchendo com zeros à esquerda.
+; Entrada: 
+;   AX = Valor numérico
+;   CX = Largura do campo (número de caracteres)
+;   DH, DL = Posição (Linha, Coluna)
+;   BL = Cor
+; Saida: Nenhum
+; =================================================================
 ESCREVE_NUMERO proc
-    ; Salva o contexto
     push AX
     push BX
     push CX
@@ -347,63 +362,59 @@ ESCREVE_NUMERO proc
     push DI
 
     mov DI, DX
-    mov SI, CX      ; Numero de caracteres
+    mov SI, CX      
     
-    mov BX, 10      ; Divisor
+    mov BX, 10      
     xor CX, CX
 
     DIVIDE_LOOP:
         xor DX, DX
-        div BX              ; AX / 10 -> Resto em DX
+        div BX              
         
-        push DX             ; Salva o digito na pilha
-        inc CX              ; Conta +1 digito real
+        push DX             
+        inc CX              
         
         cmp AX, 0
         jne DIVIDE_LOOP
     
     PREENCHE_ZEROS:
-        cmp SI, CX          ; Se Largura Desejada <= Digitos Reais
-        jle LOOP_IMPRIME    ; Entao nao precisa mais de zeros
+        cmp SI, CX          
+        jle LOOP_IMPRIME    
         
-        ; Imprime um '0'
         push CX
         
-        mov [temp_numero], '0' ; Carrega o caractere '0'
+        mov [temp_numero], '0' 
         
-        ; Configura ESCREVE_STRING
-        mov BP, offset temp_numero ; Texto
-        mov CX, 1                  ; 1 Caractere
-        mov DX, DI                 ; Posicao Atual
+        mov BP, offset temp_numero 
+        mov CX, 1                  
+        mov DX, DI                 
         call ESCREVE_STRING
         
         pop CX
-        inc DL              ; Avanca o cursor (Coluna)
-        mov DI, DX          ; Atualiza a posicao salva em DI
-        dec SI              ; Decrementa a largura pendente
+        inc DL              
+        mov DI, DX          
+        dec SI              
         jmp PREENCHE_ZEROS
         
     LOOP_IMPRIME:
-        pop AX              ; Recupera o digito (estava em DX no push)
-        push CX             ; Salva o contador do loop
+        pop AX              
+        push CX             
         
-        add AL, '0'         ; Converte para ASCII
+        add AL, '0'         
         mov [temp_numero], AL
         
         mov BP, offset temp_numero
-        mov CX, 1           ; Tamanho 1
-        mov DX, DI          ; Posicao Atual
-        ; BL Cor mantida
+        mov CX, 1           
+        mov DX, DI          
         call ESCREVE_STRING
         
-        pop CX              ; Restaura contador
+        pop CX              
         
-        inc DL              ; Avanca cursor
-        mov DI, DX          ; Atualiza posi??o salva
+        inc DL              
+        mov DI, DX          
         
-        loop LOOP_IMPRIME   ; Decrementa CX e repete se > 0
+        loop LOOP_IMPRIME   
 
-    ; Restaura contexto
     pop DI
     pop BP
     pop SI
@@ -414,8 +425,12 @@ ESCREVE_NUMERO proc
     ret
 endp
 
+; =================================================================
+; Atualiza e desenha os valores de pontuação e tempo no HUD.
+; Entrada: Variáveis globais [pontuacao], [tempo_restante].
+; Saida: Nenhum
+; =================================================================
 ESCREVE_VALORES_HUD proc
-    ; Pontuacao atual
     mov AX, [pontuacao]
     mov DH, 0
     mov DL, 7
@@ -423,7 +438,6 @@ ESCREVE_VALORES_HUD proc
     mov CX, NUMERO_DIGITOS_PONTOS
     call ESCREVE_NUMERO
 
-    ; Tempo restante
     mov AX, [tempo_restante]
     mov DH, 0
     mov DL, 38
@@ -434,6 +448,11 @@ ESCREVE_VALORES_HUD proc
     ret
 endp
 
+; =================================================================
+; Preenche toda a memória de vídeo (320x200) com cor preta.
+; Entrada: Nenhum
+; Saida: Nenhum
+; =================================================================
 LIMPA_TELA proc
     push CX
     push AX
@@ -444,12 +463,12 @@ LIMPA_TELA proc
     
     xor DI, DI
     xor AX, AX
-    CLD ;zera o DF, DF = 0 avanca e DF = 1 volta
+    CLD 
     
-    mov CX,32000  ;como avanca +2 em stoswORD precisa percorrer 32k nao 64k
+    mov CX,32000  
     mov DI,0
 
-    rep stosw  ;repete CX vezes: [ES:DI] = AX; DI += 2. 
+    rep stosw  
     
     pop DI
     pop AX
@@ -457,25 +476,34 @@ LIMPA_TELA proc
     ret
 endp
 
+; =================================================================
+; Esvazia o buffer do teclado consumindo todas as teclas pendentes.
+; Entrada: Nenhum
+; Saida: Nenhum
+; =================================================================
 LIMPA_BUFFER_TECLADO proc
     push AX
 
     CHECK_BUFFER:
         mov AH, 01h
         int 16h
-        jz BUFFER_VAZIO ; Se Zero Flag (ZF)=1, buffer esta vazio -> Sai
+        jz BUFFER_VAZIO 
 
-        ; Se ZF=0, tem tecla. Vamos consumir.
         mov AH, 00h
-        int 16h     ; Le e remove a tecla do buffer
+        int 16h     
         
-        jmp CHECK_BUFFER ; Volta para checar se tem mais
+        jmp CHECK_BUFFER 
 
     BUFFER_VAZIO:
         pop AX
         ret
 endp
 
+; =================================================================
+; Lê o estado do teclado a movimentação da nave e disparo de tiros.
+; Entrada: Variáveis [nave_posicao] e limites de tela.
+; Saida: Atualiza [nave_posicao].
+; =================================================================
 VERIFICA_TECLADO_JOGO proc
     push AX
     push DI
@@ -507,7 +535,7 @@ VERIFICA_TECLADO_JOGO proc
     
     SETA_CIMA:
         cmp DI, [limite_topo]
-        jbe FIM_TECLADO_JOGO ; Se DI <= 3200, n?o sobe mais
+        jbe FIM_TECLADO_JOGO 
 
         mov AX, 0 ; 0 = Cima
         call MOVER_VERTICAL
@@ -515,35 +543,33 @@ VERIFICA_TECLADO_JOGO proc
         
     SETA_BAIXO:
         cmp DI, [limite_fundo]
-        jae FIM_TECLADO_JOGO ; Se DI >= 59840, n?o desce mais
+        jae FIM_TECLADO_JOGO 
 
         mov AX, 1 ; 1 = Baixo
         call MOVER_VERTICAL
         jmp FIM_TECLADO_JOGO
 
     SETA_ESQUERDA:
-        ; Calcula a coluna atual (DI % 320)
         mov AX, DI
         xor DX, DX
         mov BX, LARGURA
         div BX
         
-        cmp DX, 0  ; Verifica se X <= 0
-        jle FIM_TECLADO_JOGO ; Se sim, n?o vai para a esquerda
+        cmp DX, 0  
+        jle FIM_TECLADO_JOGO 
 
         mov AX, 0 ; 0 = Esquerda
         call MOVER_HORIZONTAL
         jmp FIM_TECLADO_JOGO
 
     SETA_DIREITA:
-        ; Calcula a coluna atual (DI % 320)
         mov AX, DI
         xor DX, DX
         mov BX, LARGURA
         div BX
         
-        cmp DX, [limite_direita] ; Verifica se X >= 291
-        jae FIM_TECLADO_JOGO ; Se sim, n?o vai para a direita
+        cmp DX, [limite_direita] 
+        jae FIM_TECLADO_JOGO 
 
         mov AX, 1 ; 1 = Direita
         call MOVER_HORIZONTAL
@@ -561,8 +587,12 @@ VERIFICA_TECLADO_JOGO proc
         ret
 endp
 
+; =================================================================
+; Altera o offset da nave para movê-la verticalmente.
+; Entrada: AX (0=Cima, 1=Baixo), DI (Posição atual).
+; Saida: DI (Nova posição).
+; =================================================================
 MOVER_VERTICAL proc
-    ; AX=0 (Cima), AX=1 (Baixo)
     push BX
     mov BX, LARGURA
     
@@ -581,8 +611,12 @@ MOVER_VERTICAL proc
         ret
 endp
 
+; =================================================================
+; Altera o offset da nave para movê-la horizontalmente.
+; Entrada: AX (0=Esquerda, 1=Direita), DI (Posição atual).
+; Saida: DI (Nova posição).
+; =================================================================
 MOVER_HORIZONTAL proc
-    ; AX=0 (Esquerda), AX=1 (Direita)
     cmp AX, 0
     je MOVER_ESQUERDA
     
@@ -598,6 +632,11 @@ MOVER_HORIZONTAL proc
         ret
 endp
 
+; =================================================================
+; Controla spawn, movimentação e desenho dos inimigos.
+; Entrada: Vetores [inimigos_ativo], [inimigos_posicao].
+; Saida: Nenhum
+; =================================================================
 MOVE_INIMIGOS proc
     inc [timer_spawn_inimigo]
     cmp [timer_spawn_inimigo], DELAY_SPAWN_INIMIGO
@@ -662,6 +701,11 @@ MOVE_INIMIGOS proc
         ret
 endp
 
+; =================================================================
+; Cria um novo tiro na posição atual da nave.
+; Entrada: DI (Posição da nave).
+; Saida: Atualiza vetores de tiro.
+; =================================================================
 SPAWN_TIRO proc
     push AX
     push BX
@@ -686,7 +730,7 @@ SPAWN_TIRO proc
         
         mov AX, DI
         add AX, 29
-        add AX, 1920 ; +6 linhas para baixo (6 * 320)
+        add AX, 1920 
         
         mov tiros_posicao[BX], AX
 
@@ -697,6 +741,11 @@ SPAWN_TIRO proc
     ret
 endp
 
+; =================================================================
+; Cria um novo inimigo em uma posição vertical aleatória.
+; Entrada: Nenhum
+; Saida: Atualiza vetores de inimigos.
+; =================================================================
 SPAWN_INIMIGO proc
     push AX
     push BX
@@ -757,8 +806,9 @@ SPAWN_INIMIGO proc
 endp
 
 ; =================================================================
-; Fun??o:    GERENCIA_TIROS
-; Descri??o: Loop que controla todas as balas ativas.
+; Move todos os tiros ativos e verifica bordas.
+; Entrada: Vetores [tiros_ativo], [tiros_posicao].
+; Saida: Nenhum
 ; =================================================================
 MOVE_TIROS proc
     xor SI, SI
@@ -771,38 +821,30 @@ MOVE_TIROS proc
         cmp tiros_ativo[SI], 1
         jne PROXIMO_TIRO_LOOP
 
-        ; === 1. APAGA O TIRO ANTIGO ===
         mov DI, tiros_posicao[BX]
-        mov byte ptr ES:[DI], 0     ; Pinta pixel preto
+        mov byte ptr ES:[DI], 0
 
-        ; === 2. MOVE O TIRO ===
         add word ptr tiros_posicao[BX], VELOCIDADE_TIRO
 
-        ; === 3. VERIFICA BORDA (DIREITA) ===
-        ; Calcula Coluna X: Offset % 320
         mov AX, tiros_posicao[BX]
         xor DX, DX
         push BX
         mov CX, LARGURA
-        div CX              ; DX = Resto (X)
+        div CX
         pop BX
         
-        ; Se X < Velocidade (deu a volta) ou X > 315, mata
         cmp DX, VELOCIDADE_TIRO
         jb MATAR_ESSE_TIRO
         cmp DX, 315
         ja MATAR_ESSE_TIRO
 
-        ; === 4. CHECA COLIS?O (Passa o ?ndice do tiro atual em BX) ===
         call VERIFICA_COLISAO_INDIVIDUAL
         
-        ; Se morreu na colis?o, n?o desenha
         cmp tiros_ativo[SI], 0
         je PROXIMO_TIRO_LOOP
 
-        ; === 5. DESENHA NOVO TIRO ===
         mov DI, tiros_posicao[BX]
-        mov byte ptr ES:[DI], 0Fh   ; Pixel Branco
+        mov byte ptr ES:[DI], 0FH
         
         jmp PROXIMO_TIRO_LOOP
 
@@ -819,101 +861,88 @@ MOVE_TIROS proc
 endp
 
 ; =================================================================
-; Fun??o:    VERIFICA_COLISAO_INDIVIDUAL
-; Descri??o: Testa o tiro atual (BX) contra todos os inimigos.
-; Entrada:   BX = ?ndice do tiro atual (Word)
-;            SI = ?ndice do tiro atual (Byte)
+; Verifica colisão entre o tiro atual e todos os inimigos.
+; Entrada: BX = Índice Word do Tiro, SI = Índice Byte do Tiro.
+; Saida: Atualiza estado de vida dos inimigos e tiros.
 ; =================================================================
 VERIFICA_COLISAO_INDIVIDUAL proc
     push AX
     push CX
     push DX
-    push DI             ; Salva registradores do loop principal
-    push SI             ; Salva ?ndice do TIRO
-    push BX             ; Salva ?ndice word do TIRO
+    push DI
+    push SI
+    push BX
 
-    ; Prepara para loop dos INIMIGOS
-    xor SI, SI          ; SI agora ? ?ndice do INIMIGO
-    xor DI, DI          ; DI agora ? ?ndice word do INIMIGO
+    xor SI, SI
+    xor DI, DI
 
-LOOP_COLISAO_INIMIGOS:
-    cmp SI, MAX_INIMIGOS
-    je FIM_VERIFICA_COLISAO
+    LOOP_COLISAO_INIMIGOS:
+        cmp SI, MAX_INIMIGOS
+        je FIM_VERIFICA_COLISAO
 
-    cmp inimigos_ativo[SI], 1
-    jne PROX_INIMIGO_COLISAO
+        cmp inimigos_ativo[SI], 1
+        jne PROX_INIMIGO_COLISAO
 
-    ; --- C?LCULO: TIRO - INIMIGO ---
-    mov BX, SP          ; Truque para pegar o BX original da pilha
-    mov BX, [BX]        ; BX = ?ndice do TIRO salvo na pilha
+        mov BX, SP
+        mov BX, [BX]
+        
+        mov AX, tiros_posicao[BX]
+        sub AX, inimigos_posicao[DI]
+        
+        cmp AX, 0
+        jl PROX_INIMIGO_COLISAO
     
-    mov AX, tiros_posicao[BX]   ; Posi??o do Tiro
-    sub AX, inimigos_posicao[DI]  ; Menos Posi??o do Inimigo (DI)
-    
-    ; AX = Diferen?a (Delta)
-    
-    ; 1. Verifica se Tiro est? "atr?s" (Delta negativo)
-    cmp AX, 0
-    jl PROX_INIMIGO_COLISAO
-    
-    ; 2. Verifica Caixa de Colis?o (Divide Delta por 320)
-    push DX             ; Salva DX antes da divis?o
-    xor DX, DX
-    mov CX, 320
-    div CX              ; AX = Delta Y, DX = Delta X
-    mov CX, DX          ; Move Delta X para CX para liberar DX
-    pop DX              ; Restaura DX original
-    
-    ; AX (Y) deve ser <= 13 (Altura)
-    cmp AX, 13
-    ja PROX_INIMIGO_COLISAO
-    
-    ; CX (X) deve ser <= 29 (Largura)
-    cmp CX, 29
-    ja PROX_INIMIGO_COLISAO
+        push DX
+        xor DX, DX
+        mov CX, 320
+        div CX
+        mov CX, DX
+        pop DX
+        
+        cmp AX, 13
+        ja PROX_INIMIGO_COLISAO
+        
+        cmp CX, 29
+        ja PROX_INIMIGO_COLISAO
 
-    ; === COLIS?O CONFIRMADA ===
+        mov BX, SP
+        mov BX, [BX+2]
+        mov tiros_ativo[BX], 0
     
-    ; 1. Mata o Tiro
-    mov BX, SP
-    mov BX, [BX+2]      ; Pega o SI original (?ndice Byte do TIRO) da pilha
-    mov tiros_ativo[BX], 0
-    
-    ; 2. Verifica Fase (Meteoro Indestrut?vel)
-    mov AL, [fase]
-    cmp AL, 2
-    je FIM_VERIFICA_COLISAO ; Se for meteoro, s? o tiro morre
-    
-    ; 3. Mata o Inimigo (Fases 1 e 3)
-    mov inimigos_ativo[SI], 0
-    
-    ; Apaga o inimigo da tela
-    push DI             ; Salva DI (?ndice word inimigo)
-    mov DI, inimigos_posicao[DI]
-    call LIMPA_13x29
-    pop DI
-    
-    ; Pontos
-    ; call ADICIONA_PONTOS_ABATE
-    
-    jmp FIM_VERIFICA_COLISAO ; Sai (uma bala mata um inimigo)
+        mov AL, [fase]
+        cmp AL, 2
+        je FIM_VERIFICA_COLISAO
+        
+        mov inimigos_ativo[SI], 0
+        
+        push DI
+        mov DI, inimigos_posicao[DI]
+        call LIMPA_13x29
+        pop DI
+        
+        jmp FIM_VERIFICA_COLISAO
 
-PROX_INIMIGO_COLISAO:
-    inc SI
-    add DI, 2
-    jmp LOOP_COLISAO_INIMIGOS
+    PROX_INIMIGO_COLISAO:
+        inc SI
+        add DI, 2
+        jmp LOOP_COLISAO_INIMIGOS
 
-FIM_VERIFICA_COLISAO:
-    pop BX
-    pop SI
-    pop DI
-    pop DX
-    pop CX
-    pop AX
-    ret
+    FIM_VERIFICA_COLISAO:
+        pop BX
+        pop SI
+        pop DI
+        pop DX
+        pop CX
+        pop AX
+        ret
 endp
 
-CARREGA_FASE proc       ; Espera X segundos e depois limpa a tela
+; =================================================================
+; Realiza um delay e limpa a tela para transição de fase.
+; Entrada: [tempo_tela_fase]
+; Saida: Nenhum
+; =================================================================
+CARREGA_FASE proc
     mov CX, WORD PTR [tempo_tela_fase + 2]
     mov DX, WORD PTR [tempo_tela_fase]
     mov AH, 86h
@@ -923,9 +952,14 @@ CARREGA_FASE proc       ; Espera X segundos e depois limpa a tela
     ret
 endp
 
+; =================================================================
+; Controla o loop principal do gameplay.
+; Entrada: Variáveis globais do jogo.
+; Saida: Nenhum
+; =================================================================
 PARTIDA proc
     mov [tempo_restante], DURACAO_FASE
-    mov [cont_frames], 0  ; Zera o contador de frames
+    mov [cont_frames], 0  
 
     mov CX, MAX_INIMIGOS
     xor SI, SI
@@ -951,38 +985,37 @@ PARTIDA proc
     cmp BX, 2
     jne NAO_TROCA_COR
   
-    mov SI,terrenos_ptrs[BX];indice indo de 0...2
+    mov SI,terrenos_ptrs[BX]
     
-    mov BH, 09H ;cor alvo
-    mov BL, 06H ;cor nova
+    mov BH, 09H 
+    mov BL, 06H 
     call TERRENO_TROCA_COR
     
-    mov BH, 0EH ;cor alvo
-    mov BL, 0CH ;cor nova
+    mov BH, 0EH 
+    mov BL, 0CH 
     call TERRENO_TROCA_COR
     
-NAO_TROCA_COR:
-    ; HUD do Score / Tempo
-    mov DH, 0
-    mov DL, 0
-    mov BL, 0FH
-    mov BP, offset status
-    mov CX, tamanho_status
-    call ESCREVE_STRING
+    NAO_TROCA_COR:
+        mov DH, 0
+        mov DL, 0
+        mov BL, 0FH
+        mov BP, offset status
+        mov CX, tamanho_status
+        call ESCREVE_STRING
 
-    call ESCREVE_VALORES_HUD 
-    call MOSTRAR_VIDAS
-    
-    mov AX, [nave_posicao]
-    mov SI, offset nave
-    call DESENHA
+        call ESCREVE_VALORES_HUD 
+        call MOSTRAR_VIDAS
+        
+        mov AX, [nave_posicao]
+        mov SI, offset nave
+        call DESENHA
 
     JOGANDO:
         inc [cont_frames]
         cmp [cont_frames], FPS
-        jne ATUALIZA_MOVIMENTO                  ; Se nao passou 1s, pula para movimento
+        jne ATUALIZA_MOVIMENTO
         
-        mov [cont_frames], 0   ; Reseta contador
+        mov [cont_frames], 0
 
         push AX
         push BX
@@ -993,7 +1026,7 @@ NAO_TROCA_COR:
         shl BX, 1
 
         mov AX, tabela_pontuacao_tempo[BX]
-        add [pontuacao], AX     ; Adiciona os pontos por tempo de sobreviencia
+        add [pontuacao], AX
         
         pop AX
         pop BX
@@ -1019,14 +1052,14 @@ NAO_TROCA_COR:
         call MOVE_INIMIGOS
         call MOVE_TIROS
 
-        mov BL, [fase] ; fases numeradas a partir de 1
-        dec BL ; vira ?ndice 0..N-1
+        mov BL, [fase] 
+        dec BL 
 
         xor BH,BH
         shl BX, 1
-        mov SI, terrenos_ptrs[BX] ; SI = OFFSET terreno
-        mov AX, altura_terrenos[BX] ; AX = altura do terreno
-        mov DX, linhas_ptrs[BX] ; DX = linha inicial
+        mov SI, terrenos_ptrs[BX] 
+        mov AX, altura_terrenos[BX] 
+        mov DX, linhas_ptrs[BX] 
         call TERRENO_MOV
 
         jmp JOGANDO
@@ -1035,7 +1068,12 @@ NAO_TROCA_COR:
         ret
 endp
 
-JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
+; =================================================================
+; Gerencia a seleção de opções e transição entre fases.
+; Entrada: [menu_selecao]
+; Saida: Nenhum
+; =================================================================
+JOGAR_SAIR proc
     mov [fase], 0
     cmp menu_selecao, 1
     jne JOGAR_F1
@@ -1087,13 +1125,23 @@ JOGAR_SAIR proc                     ; Verifica qual opcao esta marcada
     ret
 endp
 
-TERMINA_JOGO proc ; Encerra o jogo
+; =================================================================
+; Encerra o programa retornando ao DOS.
+; Entrada: Nenhum
+; Saida: Nenhum
+; =================================================================
+TERMINA_JOGO proc 
     mov AH, 4Ch
     int 21h
     ret
 endp
 
-VERIFICA_OPCAO proc         ; Verifica qual opcao esta marcada no menu (jogar/sair)
+; =================================================================
+; Desenha as opções do menu com destaque na selecionada.
+; Entrada: [menu_selecao]
+; Saida: Nenhum
+; =================================================================
+VERIFICA_OPCAO proc
     push BP
     push BX
     push CX
@@ -1102,7 +1150,7 @@ VERIFICA_OPCAO proc         ; Verifica qual opcao esta marcada no menu (jogar/sa
     cmp menu_selecao, 0
     jne OPCAO_SAIR
     
-    mov DH, 18                   ; Opcao "Jogar" selecionada
+    mov DH, 18 ; Opcao "Jogar" selecionada
     mov DL, 0
     mov BL, 0CH
     mov BP, offset btn_jogar
@@ -1116,7 +1164,7 @@ VERIFICA_OPCAO proc         ; Verifica qual opcao esta marcada no menu (jogar/sa
     call ESCREVE_STRING
     jmp VOLTAR_VERIFICA_OPCAO
     
-    OPCAO_SAIR:                 ; Opcao "Sair" selecionada
+    OPCAO_SAIR: ; Opcao "Sair" selecionada
         mov DH, 18
         mov DL, 0
         mov BL, 0FH
@@ -1138,7 +1186,12 @@ VERIFICA_OPCAO proc         ; Verifica qual opcao esta marcada no menu (jogar/sa
         ret
 endp
 
-INTERAGE_MENU proc      ; Verifica se houve alguma interacao na tela do menu
+; =================================================================
+; Lê o teclado no menu para navegação entre opções.
+; Entrada: Teclado.
+; Saida: Atualiza [menu_selecao].
+; =================================================================
+INTERAGE_MENU proc
     push AX
     
     mov AH, 01H
@@ -1148,19 +1201,19 @@ INTERAGE_MENU proc      ; Verifica se houve alguma interacao na tela do menu
     xor AH, AH
     int 16H
     
-    cmp AH, 48H         ; Seta Cima
+    cmp AH, 48H ; Seta Cima
     jne BOTAO_BAIXO
     xor menu_selecao, 1
     jmp VOLTAR_MENU
     
     BOTAO_BAIXO:
-        cmp AH, 50H     ; Seta Baixo
+        cmp AH, 50H ; Seta Baixo
         jne BOTAO_ENTER
         xor menu_selecao, 1
         jmp VOLTAR_MENU
         
     BOTAO_ENTER:
-        cmp AH, 1CH     ; Enter
+        cmp AH, 1CH ; Enter
         jne VOLTAR_MENU
         call JOGAR_SAIR
         
@@ -1169,12 +1222,17 @@ INTERAGE_MENU proc      ; Verifica se houve alguma interacao na tela do menu
         ret
 endp
 
-BUSCA_INTERACAO proc ; Cria pausas para ver se houve interacao no teclado
+; =================================================================
+; Realiza um delay para controle de FPS.
+; Entrada: Constante DELAY_FRAME.
+; Saida: Nenhum
+; =================================================================
+BUSCA_INTERACAO proc 
     push CX
     push DX
     
-    xor CX, CX      ; Inicia em 0
-    mov DX, DELAY_FRAME ; e vai at? delay
+    xor CX, CX
+    mov DX, DELAY_FRAME 
     mov AH, 86h
     int 15h
     
@@ -1183,11 +1241,16 @@ BUSCA_INTERACAO proc ; Cria pausas para ver se houve interacao no teclado
     ret
 endp
 
-JOGO proc                       ; Carrega a tela inicial do jogo (menu)
+; =================================================================
+; Loop principal do menu do jogo.
+; Entrada: Nenhum
+; Saida: Nenhum
+; =================================================================
+JOGO proc
     call ESCREVE_TITULO
     call ESCREVE_BOTOES  
-    call RESET_ALIEN_MENU  ;posiona nave alien em uma posicao aleatoria na tela
-    call RESET_POSICOES_MENU    ;posiciona nave e meteoro nas extremidades
+    call RESET_ALIEN_MENU
+    call RESET_POSICOES_MENU
      
     MENU:
         call BUSCA_INTERACAO
@@ -1202,21 +1265,30 @@ JOGO proc                       ; Carrega a tela inicial do jogo (menu)
     ret
 endp
 
- 
-ESCREVE_TITULO proc ;prepara registradores pra executar o call print
+; =================================================================
+; Desenha o título ASCII do jogo na tela.
+; Entrada: [arte_titulo]
+; Saida: Nenhum
+; =================================================================
+ESCREVE_TITULO proc 
     mov AX,DS
     mov ES,AX
     
     mov BP, offset arte_titulo
     mov CX, tamanho_arte
-    mov BL, 02H ;representa a cor verde
-    xor DX,DX ;zerando o registrador DX -> DH=linha/DL=coluna
+    mov BL, 02H 
+    xor DX,DX 
     
     call ESCREVE_STRING      
     
     ret
 endp 
     
+; =================================================================
+; Desenha os botões iniciais do menu.
+; Entrada: [op_menu]
+; Saida: Nenhum
+; =================================================================
 ESCREVE_BOTOES proc
     push AX
     
@@ -1252,21 +1324,18 @@ ESCREVE_BOTOES proc
    ret
 endp 
 
-REINICIA_FASE proc  ;RESET_SECTOR
-    mov fase, 1
-    
-    ret
-endp
 
-;INT 1AH - CLOCK 00H - GET TIME OF DAY
-;Obtem os valores do controlador do relogio
-;do sistema.
-SEED_FROM_TICKS proc  ;SYSTIME_SEED
+; =================================================================
+; Inicializa a semente do gerador de números aleatórios usando o relógio do sistema.
+; Entrada: Relógio do sistema (INT 1Ah).
+; Saida: [seed]
+; =================================================================
+SEED_FROM_TICKS proc  
     push AX
     push CX
     push DX
     mov  AH, 00h
-    int  1Ah              ; CX:DX = ticks desde 00:00
+    int  1Ah              
     mov  seed, DX         
     pop  DX
     pop  CX
@@ -1275,8 +1344,11 @@ SEED_FROM_TICKS proc  ;SYSTIME_SEED
     ret
 endp
 
-
-;proc que usa LCG para gerar um numero pseudoaleatorio de 16 bits sem sinal retornado em AX
+; =================================================================
+; Gera um número pseudoaleatório de 16 bits.
+; Entrada: [seed]
+; Saida: AX (Número aleatório), [seed] atualizado
+; =================================================================
 RAND_16 proc
     
     mov AX,39541
@@ -1288,9 +1360,11 @@ RAND_16 proc
     ret
 endp
 
-;proc que retorna um numero de 8 bit sem sinal em AL,
-;AH = passado como parametro sendo o valor maximo,
-;AL = retorno, entre 0 e AL
+; =================================================================
+; Gera um número pseudoaleatório de 8 bits.
+; Entrada: AH (Limite máximo)
+; Saida: AL (Número aleatório entre 0 e AH)
+; =================================================================
 RAND_8 proc
 
    push BX
@@ -1299,17 +1373,17 @@ RAND_8 proc
    push AX
    
    xor CX,CX
-   mov CL,AH ;salva o max em CL
+   mov CL,AH 
    
-   call RAND_16; atualiza o seed e retorna UINT16 em AX
+   call RAND_16
    
-   xor DX,DX ;prepara DX para receber o resto DX = resto da divisao, entre 0...AH
+   xor DX,DX 
    mov BX,CX
    div BX
    
    pop AX 
    
-   mov AL,DL ;passa para AL o numero pseudoaleatorio
+   mov AL,DL 
    
    pop DX
    pop CX
@@ -1318,19 +1392,22 @@ RAND_8 proc
     ret
 endp
 
-;proc que reposiciona naves e objetos no menu inicial
+; =================================================================
+; Redefine posições dos elementos animados do menu.
+; Entrada: Nenhum
+; Saida: [nave_posicao], [meteoro_posicao]
+; =================================================================
 RESET_POSICOES_MENU proc
     
-    ;FORMULA BASICA DE POSICIONAMENTO NA TELA: LINHA * 320 + COLUNA.
     push AX   
     
     xor AX,AX ;zera antes 
     mov AX, 50*320 
-    mov nave_posicao, AX ;posiciona a nave
+    mov nave_posicao, AX 
      
-    add AX, 291 ;vai ate o fim da linha onde vem o meteoro 
-    add AX, 20*320  ;20 pixel pra baixo da nave, tem que multiplicar por 320 
-    mov meteoro_posicao, AX  ;posiciona o meteoro
+    add AX, 291 
+    add AX, 20*320  
+    mov meteoro_posicao, AX  
     
       
     pop AX
@@ -1338,43 +1415,46 @@ RESET_POSICOES_MENU proc
   ret
 endp
 
-
-;proc que redefine a posicao do alien no menu inicial
+; =================================================================
+; Redefine a posição do alien na animação do menu.
+; Entrada: Nenhum
+; Saida: [alien_posicao], [alien_x], [alien_y]
+; =================================================================
 RESET_ALIEN_MENU proc
     
     push AX
     push DX
     push BX
     
-    xor AX,AX
-    mov AH, 133 ;AH = MAX
+    xor AX, AX
+    mov AH, 133 
     
-    call RAND_8 ; retorna um valor peseudoaleatorio em AL onde AL < AH
-    cmp AL,90 ; se AL < 83 -> sendo 83 = 70 do inicio do meteoro + 13 altura do meteoro
+    call RAND_8 
+    cmp AL, 90 
     jae Y_OK 
-    mov AL,90;come??a depois do meteoro
+    mov AL, 90
      
     Y_OK:
-        xor DX,DX
-        mov DL,AL
-        mov alien_y,DX ;passa altura minima para Y
+        xor DX, DX
+        mov DL, AL
+        mov alien_y, DX 
         
-        mov AH,255 ; max largura
+        mov AH, 255 
         call RAND_8
         
-        cmp AL,50 ;coluna minima 29
+        cmp AL,50 
         jae X_OK
-        mov AL,50
+        mov AL, 50
     X_OK:
-        xor DX,DX
-        mov DL,AL
-        mov alien_x,DX ;coluna minima para X
+        xor DX, DX
+        mov DL, AL
+        mov alien_x, DX 
         
         
-        mov BX,320 ;adiciona 320 que o maximo de deslocamento por linha
+        mov BX, 320 
         
-        mov AX,alien_y ; move o valor em alien_y para AX
-        mul BX ;multiplica alien_y em AX para obter a linha correta, ja que a formula de deslocamento ? Y*320 + X
+        mov AX,alien_y 
+        mul BX 
         
         add AX,alien_x
     
@@ -1391,9 +1471,11 @@ RESET_ALIEN_MENU proc
    ret
 endp 
 
-
-;proc que "limpa" 13x29 pixeis na posicao DI
-;DI = POSICAO
+; =================================================================
+; Apaga um sprite de 13x29 pixels na tela.
+; Entrada: DI (Posição inicial na memória de vídeo).
+; Saida: Nenhum
+; =================================================================
 LIMPA_13x29 proc;            
     push AX
     push CX
@@ -1404,14 +1486,14 @@ LIMPA_13x29 proc;
     mov ES, AX
     mov CX, 13
 
-LIMPA_LINHA:
-    push CX
-    mov CX, 29
-    xor AX, AX
-    rep stosb
-    add DI, 291
-    pop CX
-    loop LIMPA_LINHA
+    LIMPA_LINHA:
+        push CX
+        mov CX, 29
+        xor AX, AX
+        rep stosb
+        add DI, 291
+        pop CX
+        loop LIMPA_LINHA
 
     pop ES
     pop DI
@@ -1422,9 +1504,13 @@ LIMPA_LINHA:
   ret
 endp
 
-;proc que desenha um elemento na tela utilizando rep movsb ;DS:SI -> ES:DI 
-; AX = posicao atual do elemento
-; SI = offset do elemento no DS
+; =================================================================
+; Desenha um sprite genérico de 13x29 pixels.
+; Entrada: 
+;   AX = Posição na tela
+;   SI = Offset do sprite
+; Saida: Nenhum
+; =================================================================
 DESENHA proc
      push BX
      push CX
@@ -1432,27 +1518,27 @@ DESENHA proc
      push DI
      push ES
      push DS
-     push AX ;salva a posicao
+     push AX 
       
      mov AX, @data
      mov DS, AX
      
-     mov AX, 0A000H;SEGMENTO DE VIDEO
+     mov AX, 0A000H
      mov ES, AX
      
      
-     pop AX ;volta a posicao salva
+     pop AX 
      mov DI, AX
-     MOV DX, 13 ;altura 13
+     MOV DX, 13 
      
      push AX
      
     LINHA_LOOP:
-         mov CX, 29 ;largura 29
-         rep movsb ;DS:SI -> ES:DI 
-         add DI, 320-29  ;+320 avanca 1 linha - 29 para ir na posicao correta do inicio da nave
+         mov CX, 29 
+         rep movsb 
+         add DI, 320-29
          
-         dec DX ;terminou uma linha decrementa o contador de altura 
+         dec DX 
          jnz LINHA_LOOP 
          
     pop AX
@@ -1466,8 +1552,13 @@ DESENHA proc
     ret
 endp
 
-; AX = posicao atual do elemento
-; SI = offset do elemento no DS
+; =================================================================
+; Desenha o sprite de vida (7x16 pixels).
+; Entrada: 
+;   AX = Posição na tela
+;   SI = Offset do sprite
+; Saida: Nenhum
+; =================================================================
 DESENHA_7x16 proc
      push BX
      push CX
@@ -1475,27 +1566,27 @@ DESENHA_7x16 proc
      push DI
      push ES
      push DS
-     push AX ;salva a posicao
+     push AX 
       
      mov AX, @data
      mov DS, AX
      
-     mov AX, 0A000H;SEGMENTO DE VIDEO
+     mov AX, 0A000H
      mov ES, AX
      
      
-     pop AX ;volta a posicao salva
+     pop AX 
      mov DI, AX
-     MOV DX, 7 ;altura
+     MOV DX, 7 
      
      push AX
      
     LINHA_LOOP2:
-            mov CX, 16 ;largura
-            rep movsb ;DS:SI -> ES:DI 
-            add DI, 320-16  ;+320 avanca 1 linha - tamanho do elemento
+            mov CX, 16 
+            rep movsb 
+            add DI, 320-16  
             
-            dec DX ;terminou uma linha decrementa o contador de altura 
+            dec DX 
             jnz LINHA_LOOP2 
          
     pop AX
@@ -1509,9 +1600,11 @@ DESENHA_7x16 proc
     ret
 endp
 
-
-;Proc que diminui a quantidade de vidas do header baseando-se 
-;em vidas
+; =================================================================
+; Decrementa o contador de vidas e atualiza visualmente.
+; Entrada: [vidas]
+; Saida: [vidas] atualizado, [vidas_vetor] atualizado
+; =================================================================
 DIMINUIR_VIDA proc
     push AX
     push BX
@@ -1528,27 +1621,27 @@ DIMINUIR_VIDA proc
     
     mov AL, vidas
     cmp AL, 0
-    jz DIMINUIR_FIM ;se a quantidade de vidas = 0 entao pula
+    jz DIMINUIR_FIM 
     
-    dec AL ; 0..2
-    mov vidas, AL ;atualiza qtd
+    dec AL 
+    mov vidas, AL 
     
-    mov BL,AL ;BL usado como indice
+    mov BL,AL 
     mov vidas_vetor[BX],0
     
-    mov AL, vida_posicao_x[BX]
+    mov AL, vida_posicao_x[BX] 
     mov DI, AX
     mov DX, 7 
 
     DIMINUIR_VIDA_LOOP:
         mov CX,16
         mov AL,0
-        rep stosb
+        rep stosb 
         
         add DI, 320-16
         dec DX
         jnz DIMINUIR_VIDA_LOOP
-        
+ 
     DIMINUIR_FIM:
         pop ES
         pop DI
@@ -1560,6 +1653,11 @@ DIMINUIR_VIDA proc
     ret
 endp
 
+; =================================================================
+; Desenha as vidas iniciais no HUD.
+; Entrada: [vidas_vetor], [vida_posicao_x]
+; Saida: Nenhum
+; =================================================================
 MOSTRAR_VIDAS proc
     push AX
     push BX
@@ -1594,39 +1692,43 @@ MOSTRAR_VIDAS proc
     ret
 endp
 
+; =================================================================
+; Controla a animação automática dos elementos no menu principal.
+; Entrada: Posições das naves e meteoros.
+; Saida: Atualiza posições e redesenha elementos.
+; =================================================================
 MENU_ANIMATION proc
     MOVE_NAVE:
         mov AX, nave_posicao
         mov DI, AX   
         
-        call LIMPA_13x29; apaga 13x29 na posicao DI.
+        call LIMPA_13x29
         
-        cmp AX, 50*320+291 ;LINHA 70 + COLUNA = 291 compara se a nave chegou na borda direita
+        cmp AX, 50*320+291 
         je MOVE_METEORO
         
-        inc nave_posicao ;move 1 pixel
-        inc AX ;move tambem AX 1 pixel 
+        inc nave_posicao 
+        inc AX 
         
-        mov SI, offset nave ;prepara SI para MOVSB Move de DS:SI -> ES:DI
-        call DESENHA; RENDER_SPRITE
+        mov SI, offset nave 
+        call DESENHA
     
     MOVE_METEORO:
         mov AX, meteoro_posicao
-        mov DI, AX;move a posicao do meteoro para DI
+        mov DI, AX
         
-        cmp AX, 70*320 ;linha 70 = 50 da nave + 20 do reset posicoes
+        cmp AX, 70*320 
         
         
         je RESET_NAVE_METEORO
         
-        call LIMPA_13x29; apaga 13x29 na posicao DI.
+        call LIMPA_13x29
             
-        ;meteoro vem pra direita    
         dec meteoro_posicao
         dec AX
         
         mov SI, offset meteoro
-        call DESENHA; RENDER_SPRIT
+        call DESENHA
 
      MOVE_ALIEN:
     
@@ -1635,17 +1737,16 @@ MENU_ANIMATION proc
      jne ALIEN_DIREITA
      
         mov AX, alien_posicao
-        mov DI, AX;move a posicao do meteoro para DI
+        mov DI, AX
         
-        mov DX,alien_x 
+        mov DX, alien_x 
         
-        cmp DX,0 ;Chegou na borda da esquerda
+        cmp DX, 0 
         
         je RESET_ALIEN_DIRECTION
         
-        call LIMPA_13x29; apaga 13x29 na posicao DI.
+        call LIMPA_13x29
             
-        ;alien vem pra esquerda    
         dec alien_posicao
         dec AX
         dec alien_x
@@ -1669,7 +1770,7 @@ MENU_ANIMATION proc
         inc alien_x
         
         mov SI, offset alien
-        call DESENHA; RENDER_SPRIT 
+        call DESENHA
         jmp END_POS_UPDATE
     
     RESET_ALIEN_DIRECTION:
@@ -1689,6 +1790,14 @@ MENU_ANIMATION proc
         ret
 endp
 
+; =================================================================
+; Desenha o terreno rolando horizontalmente (Scrolling).
+; Entrada: 
+;   SI = Offset do terreno no buffer
+;   AX = Altura do terreno
+;   DX = Linha inicial do desenho
+; Saida: Nenhum
+; =================================================================
 TERRENO_DESENHA proc
     push CX
     push DX
@@ -1696,37 +1805,38 @@ TERRENO_DESENHA proc
     push DI
     push AX
     
-    mov AX, 0A000H       ; Segmento de mem?ria de v?deo (modo gr?fico 13h)
-    mov ES, AX                  ; Aponta ES para o segmento de v?deo
+    mov AX, 0A000H
+    mov ES, AX
     
     pop AX
     
-    add SI, scroll_cenario          ; Aplica o deslocamento para o cen?rio
+    add SI, scroll_cenario
 
-PRINTA_CENARIO:
-    mov DI, DX               ;  offset da linha 
-    mov DX, AX                  ; N?mero de linhas a desenhar
-desenha_linha_ter:
-    mov CX, 320                 ; N?mero de pixels por linha
-    rep movsb                   ; Copia a linha do cen?rio para a tela
+    PRINTA_CENARIO:
+        mov DI, DX
+        mov DX, AX
+    DESENHA_LINHA_TERRENO:
+        mov CX, 320
+        rep movsb
 
-    add SI, LARGURA_CENARIO-LARGURA                 ; Avan?a o ponteiro no cen?rio para a pr?xima linha (480 - 320 = 160 que ?  parte que faltou desenhar)
-    dec DX                      ; Decrementa o contador de linhas
-    jnz desenha_linha_ter       ; Continua enquanto houver linhas a desenhar
+        add SI, LARGURA_CENARIO-LARGURA
+        dec DX
+        jnz DESENHA_LINHA_TERRENO
 
-END_PROC:
-    pop DI
-    pop SI
-    pop DX
-    pop CX
-    pop AX
-    ret
-ENDP
+    END_PROC:
+        pop DI
+        pop SI
+        pop DX
+        pop CX
+        pop AX
+        ret
+endp
 
-;PARAMS
-; AX = ALTURA DO TERRENO
-;SI = OFFSET DO TERRENO
-;DX = LINHA INICIAL DO DESENHO
+; =================================================================
+; Atualiza o deslocamento do terreno (scroll).
+; Entrada: [scroll_cenario], VELOCIDADE.
+; Saida: [scroll_cenario] atualizado.
+; =================================================================
 TERRENO_MOV proc   
     add scroll_cenario, VELOCIDADE
     cmp scroll_cenario, LARGURA_CENARIO
@@ -1740,12 +1850,14 @@ TERRENO_MOV proc
     ret
 ENDP
 
-
-; PARAMS:
-;   DS:SI -> buffer do terreno (in-place)
-;   BH    -> cor_alvo (a que ser? substitu?da)
-;   BL    -> cor_nova
-; Efeitos: altera apenas bytes == cor_alvo
+; =================================================================
+; Substitui uma cor específica por outra no buffer do terreno.
+; Entrada: 
+;   DS:SI = Buffer do terreno
+;   BH = Cor alvo
+;   BL = Cor nova
+; Saida: Buffer alterado.
+; =================================================================
 TERRENO_TROCA_COR PROC
     PUSH AX
     PUSH BX
@@ -1754,14 +1866,14 @@ TERRENO_TROCA_COR PROC
 
     MOV CX, LARGURA_CENARIO*50
 
-    CLD                     ; garantir SI++
+    CLD
 
 TERRENO_TROCA_LOOP:
 
-    LODSB                   ; AL = [DS:SI], SI++
-    CMP   AL, BH            ; ? a cor-alvo?
-    JNE   PULA_ESCRITA_COR
-    MOV   [SI-1], BL        ; substitui por cor_nova asdads
+    LODSB
+    CMP AL, BH
+    JNE PULA_ESCRITA_COR
+    MOV [SI-1], BL
 PULA_ESCRITA_COR:
     LOOP  TERRENO_TROCA_LOOP
 
@@ -1773,17 +1885,14 @@ PULA_ESCRITA_COR:
 endp
 
 MAIN:
-    ;referencia o segmento de dados em ds
     mov AX, @data
     mov DS, AX
     
-    ;referencia o segmento de memoria de video em ES
     mov AX, 0A000H
     mov ES, AX
     
     call SEED_FROM_TICKS
     
-    ;inicia modo de video com 0A000H
     xor AH, AH
     mov AL, 13H
     int 10H
