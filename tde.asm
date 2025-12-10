@@ -500,6 +500,9 @@ VERIFICA_TECLADO_JOGO proc
     cmp AH, 4DH
     je SETA_DIREITA
     
+    cmp AH, 39h
+    je ESPACO
+    
     jmp FIM_TECLADO_JOGO
     
     SETA_CIMA:
@@ -544,6 +547,10 @@ VERIFICA_TECLADO_JOGO proc
 
         mov AX, 1 ; 1 = Direita
         call MOVER_HORIZONTAL
+        jmp FIM_TECLADO_JOGO
+
+    ESPACO:
+        call SPAWN_TIRO
         jmp FIM_TECLADO_JOGO
         
     FIM_TECLADO_JOGO:
@@ -591,64 +598,6 @@ MOVER_HORIZONTAL proc
         ret
 endp
 
-SPAWN_INIMIGO proc
-    push AX
-    push BX
-    push CX
-    push DX
-    push SI
-    
-    xor SI, SI
-    xor BX, BX
-
-    PROCURA_VAGA:
-        cmp SI, MAX_INIMIGOS
-        je FIM_SPAWN
-        
-        cmp inimigos_ativos[SI], 0
-        je GERAR
-        
-        inc SI
-        add BX, 2
-        jmp PROCURA_VAGA
-
-    GERAR:
-        push BX
-
-        xor BX, BX
-        mov BL, [fase]
-        dec BL
-        shl BX, 1
-
-        mov CX, altura_terrenos[BX]
-
-        pop BX
-
-        mov AX, ALTURA -10 -13 ; ALTURA - HUD - SPRITE
-        sub AX, CX
-        mov AH, AL
-        call RAND_8
-        add AL, 10
-        xor AH, AH
-
-        push CX
-        mov CX, LARGURA
-        mul CX
-        pop CX
-        
-        add AX, limite_direita
-        
-        mov inimigos_posicao[BX], AX
-        mov inimigos_ativos[SI], 1
-
-    FIM_SPAWN:
-        pop SI
-        pop DX
-        pop CX
-        pop BX
-        pop AX
-        ret
-endp
 MOVE_INIMIGOS proc
     inc [timer_spawn_inimigo]
     cmp [timer_spawn_inimigo], DELAY_SPAWN_INIMIGO
@@ -665,7 +614,7 @@ MOVE_INIMIGOS proc
         cmp SI, MAX_INIMIGOS
         je SAI_GERENCIA
 
-        cmp inimigos_ativos[SI], 1
+        cmp inimigos_ativo[SI], 1
         jne PROXIMO_INIMIGO
 
         mov DI, inimigos_posicao[BX]
@@ -702,7 +651,7 @@ MOVE_INIMIGOS proc
         jmp PROXIMO_INIMIGO
 
     MATAR_INIMIGO:
-        mov inimigos_ativos[SI], 0
+        mov inimigos_ativo[SI], 0
 
     PROXIMO_INIMIGO:
         inc SI
@@ -711,6 +660,257 @@ MOVE_INIMIGOS proc
 
     SAI_GERENCIA:
         ret
+endp
+
+SPAWN_TIRO proc
+    push AX
+    push BX
+    push SI
+
+    xor SI, SI
+    xor BX, BX
+
+    PROCURA_VAGA_TIRO:
+        cmp SI, MAX_TIROS
+        je FIM_SPAWN_TIRO
+        
+        cmp tiros_ativo[SI], 0
+        je ATIRAR
+        
+        inc SI
+        add BX, 2
+        jmp PROCURA_VAGA_TIRO
+
+    ATIRAR:
+        mov tiros_ativo[SI], 1
+        
+        mov AX, DI
+        add AX, 29
+        add AX, 1920 ; +6 linhas para baixo (6 * 320)
+        
+        mov tiros_posicao[BX], AX
+
+    FIM_SPAWN_TIRO:
+        pop SI
+        pop BX
+        pop AX
+    ret
+endp
+
+SPAWN_INIMIGO proc
+    push AX
+    push BX
+    push CX
+    push DX
+    push SI
+    
+    xor SI, SI
+    xor BX, BX
+
+    PROCURA_VAGA_INIMIGO:
+        cmp SI, MAX_INIMIGOS
+        je FIM_SPAWN
+        
+        cmp inimigos_ativo[SI], 0
+        je GERAR
+        
+        inc SI
+        add BX, 2
+        jmp PROCURA_VAGA_INIMIGO
+
+    GERAR:
+        push BX
+
+        xor BX, BX
+        mov BL, [fase]
+        dec BL
+        shl BX, 1
+
+        mov CX, altura_terrenos[BX]
+
+        pop BX
+
+        mov AX, ALTURA -10 -13 ; ALTURA - HUD - SPRITE
+        sub AX, CX
+        mov AH, AL
+        call RAND_8
+        add AL, 10
+        xor AH, AH
+
+        push CX
+        mov CX, LARGURA
+        mul CX
+        pop CX
+        
+        add AX, limite_direita
+        
+        mov inimigos_posicao[BX], AX
+        mov inimigos_ativo[SI], 1
+
+    FIM_SPAWN:
+        pop SI
+        pop DX
+        pop CX
+        pop BX
+        pop AX
+        ret
+endp
+
+; =================================================================
+; Fun??o:    GERENCIA_TIROS
+; Descri??o: Loop que controla todas as balas ativas.
+; =================================================================
+MOVE_TIROS proc
+    xor SI, SI
+    xor BX, BX
+
+    LOOP_TIROS:
+        cmp SI, MAX_TIROS
+        je SAI_GERENCIA_TIROS
+
+        cmp tiros_ativo[SI], 1
+        jne PROXIMO_TIRO_LOOP
+
+        ; === 1. APAGA O TIRO ANTIGO ===
+        mov DI, tiros_posicao[BX]
+        mov byte ptr ES:[DI], 0     ; Pinta pixel preto
+
+        ; === 2. MOVE O TIRO ===
+        add word ptr tiros_posicao[BX], VELOCIDADE_TIRO
+
+        ; === 3. VERIFICA BORDA (DIREITA) ===
+        ; Calcula Coluna X: Offset % 320
+        mov AX, tiros_posicao[BX]
+        xor DX, DX
+        push BX
+        mov CX, LARGURA
+        div CX              ; DX = Resto (X)
+        pop BX
+        
+        ; Se X < Velocidade (deu a volta) ou X > 315, mata
+        cmp DX, VELOCIDADE_TIRO
+        jb MATAR_ESSE_TIRO
+        cmp DX, 315
+        ja MATAR_ESSE_TIRO
+
+        ; === 4. CHECA COLIS?O (Passa o ?ndice do tiro atual em BX) ===
+        call VERIFICA_COLISAO_INDIVIDUAL
+        
+        ; Se morreu na colis?o, n?o desenha
+        cmp tiros_ativo[SI], 0
+        je PROXIMO_TIRO_LOOP
+
+        ; === 5. DESENHA NOVO TIRO ===
+        mov DI, tiros_posicao[BX]
+        mov byte ptr ES:[DI], 0Fh   ; Pixel Branco
+        
+        jmp PROXIMO_TIRO_LOOP
+
+    MATAR_ESSE_TIRO:
+        mov tiros_ativo[SI], 0
+
+    PROXIMO_TIRO_LOOP:
+        inc SI
+        add BX, 2
+        jmp LOOP_TIROS
+
+    SAI_GERENCIA_TIROS:
+        ret
+endp
+
+; =================================================================
+; Fun??o:    VERIFICA_COLISAO_INDIVIDUAL
+; Descri??o: Testa o tiro atual (BX) contra todos os inimigos.
+; Entrada:   BX = ?ndice do tiro atual (Word)
+;            SI = ?ndice do tiro atual (Byte)
+; =================================================================
+VERIFICA_COLISAO_INDIVIDUAL proc
+    push AX
+    push CX
+    push DX
+    push DI             ; Salva registradores do loop principal
+    push SI             ; Salva ?ndice do TIRO
+    push BX             ; Salva ?ndice word do TIRO
+
+    ; Prepara para loop dos INIMIGOS
+    xor SI, SI          ; SI agora ? ?ndice do INIMIGO
+    xor DI, DI          ; DI agora ? ?ndice word do INIMIGO
+
+LOOP_COLISAO_INIMIGOS:
+    cmp SI, MAX_INIMIGOS
+    je FIM_VERIFICA_COLISAO
+
+    cmp inimigos_ativo[SI], 1
+    jne PROX_INIMIGO_COLISAO
+
+    ; --- C?LCULO: TIRO - INIMIGO ---
+    mov BX, SP          ; Truque para pegar o BX original da pilha
+    mov BX, [BX]        ; BX = ?ndice do TIRO salvo na pilha
+    
+    mov AX, tiros_posicao[BX]   ; Posi??o do Tiro
+    sub AX, inimigos_posicao[DI]  ; Menos Posi??o do Inimigo (DI)
+    
+    ; AX = Diferen?a (Delta)
+    
+    ; 1. Verifica se Tiro est? "atr?s" (Delta negativo)
+    cmp AX, 0
+    jl PROX_INIMIGO_COLISAO
+    
+    ; 2. Verifica Caixa de Colis?o (Divide Delta por 320)
+    push DX             ; Salva DX antes da divis?o
+    xor DX, DX
+    mov CX, 320
+    div CX              ; AX = Delta Y, DX = Delta X
+    mov CX, DX          ; Move Delta X para CX para liberar DX
+    pop DX              ; Restaura DX original
+    
+    ; AX (Y) deve ser <= 13 (Altura)
+    cmp AX, 13
+    ja PROX_INIMIGO_COLISAO
+    
+    ; CX (X) deve ser <= 29 (Largura)
+    cmp CX, 29
+    ja PROX_INIMIGO_COLISAO
+
+    ; === COLIS?O CONFIRMADA ===
+    
+    ; 1. Mata o Tiro
+    mov BX, SP
+    mov BX, [BX+2]      ; Pega o SI original (?ndice Byte do TIRO) da pilha
+    mov tiros_ativo[BX], 0
+    
+    ; 2. Verifica Fase (Meteoro Indestrut?vel)
+    mov AL, [fase]
+    cmp AL, 2
+    je FIM_VERIFICA_COLISAO ; Se for meteoro, s? o tiro morre
+    
+    ; 3. Mata o Inimigo (Fases 1 e 3)
+    mov inimigos_ativo[SI], 0
+    
+    ; Apaga o inimigo da tela
+    push DI             ; Salva DI (?ndice word inimigo)
+    mov DI, inimigos_posicao[DI]
+    call LIMPA_13x29
+    pop DI
+    
+    ; Pontos
+    ; call ADICIONA_PONTOS_ABATE
+    
+    jmp FIM_VERIFICA_COLISAO ; Sai (uma bala mata um inimigo)
+
+PROX_INIMIGO_COLISAO:
+    inc SI
+    add DI, 2
+    jmp LOOP_COLISAO_INIMIGOS
+
+FIM_VERIFICA_COLISAO:
+    pop BX
+    pop SI
+    pop DI
+    pop DX
+    pop CX
+    pop AX
+    ret
 endp
 
 CARREGA_FASE proc       ; Espera X segundos e depois limpa a tela
@@ -730,9 +930,16 @@ PARTIDA proc
     mov CX, MAX_INIMIGOS
     xor SI, SI
     ZERA_INIMIGOS:
-        mov inimigos_ativos[SI], 0
+        mov inimigos_ativo[SI], 0
         inc SI
         loop ZERA_INIMIGOS
+
+    mov CX, MAX_TIROS
+    xor SI, SI
+    ZERA_TIROS:
+        mov tiros_ativo[SI], 0
+        inc SI
+        loop ZERA_TIROS
 
     xor BX, BX
     mov BL, [fase]
@@ -816,10 +1023,10 @@ NAO_TROCA_COR:
         dec BL ; vira ?ndice 0..N-1
 
         xor BH,BH
-        shl bx, 1
-        mov si, terrenos_ptrs[BX] ; SI = OFFSET terreno
-        mov ax, altura_terrenos[BX] ; AX = altura do terreno
-        mov dx, linhas_ptrs[BX] ; DX = linha inicial
+        shl BX, 1
+        mov SI, terrenos_ptrs[BX] ; SI = OFFSET terreno
+        mov AX, altura_terrenos[BX] ; AX = altura do terreno
+        mov DX, linhas_ptrs[BX] ; DX = linha inicial
         call TERRENO_MOV
 
         jmp JOGANDO
@@ -1329,19 +1536,18 @@ DIMINUIR_VIDA proc
     mov BL,AL ;BL usado como indice
     mov vidas_vetor[BX],0
     
-    mov AL, vida_posicao_x[BX] ;DI = posicao atual da vida na tela
-    mov DI,AX
+    mov AL, vida_posicao_x[BX]
+    mov DI, AX
     mov DX, 7 
 
     DIMINUIR_VIDA_LOOP:
         mov CX,16
         mov AL,0
-        rep stosb ;STOSB ESCREVE AL EM ES:DI, CX vezes
+        rep stosb
         
         add DI, 320-16
         dec DX
         jnz DIMINUIR_VIDA_LOOP
-        
         
     DIMINUIR_FIM:
         pop ES
@@ -1355,42 +1561,36 @@ DIMINUIR_VIDA proc
 endp
 
 MOSTRAR_VIDAS proc
-    push ax
-    push bx
-    push cx
-    push dx
-    push si
+    push AX
+    push BX
+    push CX
+    push DX
+    push SI
 
-       
-    xor  BX, BX
-    xor AX,AX
-    mov  CX, 3 ; tr?s vidas
+    xor BX, BX
+    xor AX, AX
+    mov CX, NUMERO_VIDAS
 
-DESENHAR_LOOP2:
-      lea  si, vida  
+    DESENHAR_VIDA:
+        lea SI, vida  
+        mov AL, [vidas_vetor+bx]
+        cmp AX, 0
 
-    
-      mov  AL, [vidas_vetor+bx]
-      cmp  AX, 0
-    je   PROXIMA_VIDA ; se destru?da, s? avan?a
+        je PROXIMA_VIDA
 
-   
-    mov  AL, [vida_posicao_x+BX] ;vida_posicao_x = vetor de posicoes na tela de cada vida
+        mov AL, [vida_posicao_x+BX]
+        call DESENHA_7x16
+
+    PROXIMA_VIDA:
+        inc  BX
+        loop DESENHAR_VIDA
 
 
-    ;AX = posicao na tela
-    ;SI = offset no .data do desenho da vida
-    call DESENHA_7x16
-
-PROXIMA_VIDA:
-    inc  bx
-    loop DESENHAR_LOOP2
-
-    pop  si
-    pop  dx
-    pop  cx
-    pop  bx
-    pop  ax
+    pop  SI
+    pop  DX
+    pop  CX
+    pop  BX
+    pop  AX
     ret
 endp
 
@@ -1457,16 +1657,13 @@ MENU_ANIMATION proc
         
     ALIEN_DIREITA:
         mov AX, alien_posicao
-        mov DI, AX;move a posicao do aliwn para DI
-        mov DX,alien_x  
-        ;push AX
-        cmp DX,291 ;Chegou na borda da esquerda     
-        ;pop AX     
+        mov DI, AX
+        mov DX, alien_x  
+        cmp DX, limite_direita    
         je RESET_ALIEN
         
-        call LIMPA_13x29; apaga 13x29 na posicao DI.
-            
-        ;alien vem pra direita    
+        call LIMPA_13x29
+              
         inc alien_posicao
         inc AX
         inc alien_x
@@ -1476,16 +1673,16 @@ MENU_ANIMATION proc
         jmp END_POS_UPDATE
     
     RESET_ALIEN_DIRECTION:
-        mov alien_direction,2
+        mov alien_direction, 2
         jmp END_POS_UPDATE
         
     RESET_ALIEN:
         call LIMPA_13x29
-        mov alien_direction,1
+        mov alien_direction, 1
         jmp END_POS_UPDATE
         
     RESET_NAVE_METEORO:
-        call LIMPA_13x29; apaga 13x29 na posicao DI.
+        call LIMPA_13x29
         call RESET_POSICOES_MENU 
     
     END_POS_UPDATE:
@@ -1493,36 +1690,36 @@ MENU_ANIMATION proc
 endp
 
 TERRENO_DESENHA proc
-    push cx
-    push dx
-    push si
-    push di
-    push ax
+    push CX
+    push DX
+    push SI
+    push DI
+    push AX
     
-    mov ax, 0A000H       ; Segmento de mem?ria de v?deo (modo gr?fico 13h)
-    mov es, ax                  ; Aponta ES para o segmento de v?deo
+    mov AX, 0A000H       ; Segmento de mem?ria de v?deo (modo gr?fico 13h)
+    mov ES, AX                  ; Aponta ES para o segmento de v?deo
     
     pop AX
     
-    add si, scroll_cenario          ; Aplica o deslocamento para o cen?rio
+    add SI, scroll_cenario          ; Aplica o deslocamento para o cen?rio
 
 PRINTA_CENARIO:
-    mov di, DX               ;  offset da linha 
-    mov dx, AX                  ; N?mero de linhas a desenhar
+    mov DI, DX               ;  offset da linha 
+    mov DX, AX                  ; N?mero de linhas a desenhar
 desenha_linha_ter:
-    mov cx, 320                 ; N?mero de pixels por linha
+    mov CX, 320                 ; N?mero de pixels por linha
     rep movsb                   ; Copia a linha do cen?rio para a tela
 
-    add si, LARGURA_CENARIO-LARGURA                 ; Avan?a o ponteiro no cen?rio para a pr?xima linha (480 - 320 = 160 que ?  parte que faltou desenhar)
-    dec dx                      ; Decrementa o contador de linhas
+    add SI, LARGURA_CENARIO-LARGURA                 ; Avan?a o ponteiro no cen?rio para a pr?xima linha (480 - 320 = 160 que ?  parte que faltou desenhar)
+    dec DX                      ; Decrementa o contador de linhas
     jnz desenha_linha_ter       ; Continua enquanto houver linhas a desenhar
 
 END_PROC:
-    pop di
-    pop si
-    pop dx
-    pop cx
-    pop ax
+    pop DI
+    pop SI
+    pop DX
+    pop CX
+    pop AX
     ret
 ENDP
 
@@ -1573,7 +1770,7 @@ PULA_ESCRITA_COR:
     POP BX
     POP AX
     RET
-TERRENO_TROCA_COR ENDP
+endp
 
 MAIN:
     ;referencia o segmento de dados em ds
