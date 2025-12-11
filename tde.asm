@@ -169,11 +169,11 @@ alien db 00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh
       db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
 alien_tamanho equ $ - alien
 
-pontuacao_frase db "PONTUACAO:"
-tamanho_pontuacao_frase equ $-pontuacao_frase
-
 status db "SCORE:", 22 + (NUMERO_DIGITOS_PONTOS+1) - (NUMERO_DIGITOS_TEMPO+1) dup(" "), "TEMPO:", LF, CR
 tamanho_status equ $ - status
+
+pontuacao_frase db "PONTUACAO:"
+tamanho_pontuacao_frase equ $-pontuacao_frase
 
 vida db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H
      db 00H,09H,09H,09H,0CH,0CH,0CH,0CH,0CH,00H,0EH,00H,00H,0EH,0EH,00H
@@ -391,13 +391,13 @@ ESCREVE_NUMERO proc
         push CX
         
         mov [temp_numero], '0' 
-        
         mov BP, offset temp_numero 
         mov CX, 1                  
         mov DX, DI                 
         call ESCREVE_STRING
         
         pop CX
+        
         inc DL              
         mov DI, DX          
         dec SI              
@@ -472,8 +472,8 @@ LIMPA_TELA proc
     xor AX, AX
     CLD 
     
-    mov CX,32000  
-    mov DI,0
+    mov CX, 32000  
+    mov DI, 0
 
     rep stosw  
     
@@ -688,7 +688,7 @@ SPAWN_INIMIGO proc
         mul CX
         pop CX
         
-        add AX, limite_direita
+        add AX, [limite_direita]
         
         mov inimigos_posicao[BX], AX
         mov inimigos_ativo[SI], 1
@@ -740,8 +740,8 @@ MOVE_INIMIGOS proc
         jbe REMOVER_INIMIGO
         
         sub inimigos_posicao[BX], VELOCIDADE
-        
         mov AX, inimigos_posicao[BX]
+        
         push SI
 
         cmp [fase], 2
@@ -800,7 +800,7 @@ SPAWN_TIRO proc
         
         mov AX, DI
         add AX, 29
-        add AX, 1920 
+        add AX, 1920    ; Aproximadamente metade da altura da JET
         
         mov tiros_posicao[BX], AX
 
@@ -1004,8 +1004,6 @@ PARTIDA proc
     SAIR_DA_FASE:
         ret
 endp
-
-
 
 ; =================================================================
 ; Gerencia a selecao de opcoes e transicao entre fases.
@@ -1224,14 +1222,15 @@ JOGO proc
     MENU:
         call BUSCA_INTERACAO
         call INTERAGE_MENU
+        
+        cmp fase, 4
+        je RESET_JOGO
+        cmp fase, 5
+        je RESET_JOGO
+        
         call MENU_ANIMATION
-        jne CONTINUA_LOOP
         
     CONTINUA_LOOP:
-        cmp fase, 4
-        je RESET_JOGO  
-        cmp fase, 5
-        je RESET_JOGO 
         call VERIFICA_OPCAO
         jmp MENU
  
@@ -1242,9 +1241,10 @@ JOGO proc
         call ESCREVE_BOTOES
         call RESET_ALIEN_MENU
         call RESET_POSICOES_MENU
-        mov fase,0
-        mov SI,terrenos_ptrs[0]
-    
+        mov fase, 0
+
+        mov SI, terrenos_ptrs[0]
+
         mov BH, 06H  
         mov BL, 09H 
         call TERRENO_TROCA_COR
@@ -1294,7 +1294,6 @@ ESCREVE_VENCEDOR proc
     mov DH,10 
     call ESCREVE_STRING
     
-    
     mov BP, offset pontuacao_frase
     mov CX, tamanho_pontuacao_frase
     mov BL, 0FH
@@ -1303,15 +1302,12 @@ ESCREVE_VENCEDOR proc
     mov DL,12
     call ESCREVE_STRING
      
-     
     mov AX, [pontuacao]
     mov DH, 15
     mov DL, 22
     mov CX, NUMERO_DIGITOS_PONTOS
     call ESCREVE_NUMERO
 
-    
-    
     ret
 endp
 
@@ -1321,7 +1317,6 @@ endp
 ; Saida: Nenhum
 ; =================================================================
 ESCREVE_GAME_OVER proc
-    
     mov AX,DS
     mov ES,AX
     
@@ -1401,13 +1396,11 @@ endp
 ; Saida: AX (Numero aleatorio), [seed] atualizado
 ; =================================================================
 RAND_16 proc
-    
-    mov AX,39541
+    mov AX, 39541
     mul seed
     add AX, 16259
-    mov seed,AX
+    mov seed, AX
     
-
     ret
 endp
 
@@ -1417,7 +1410,6 @@ endp
 ; Saida: AL (Numero aleatorio entre 0 e AH)
 ; =================================================================
 RAND_8 proc
-
    push BX
    push CX
    push DX
@@ -1449,21 +1441,19 @@ endp
 ; Saida: [nave_posicao], [meteoro_posicao]
 ; =================================================================
 RESET_POSICOES_MENU proc
-    
     push AX   
     
     xor AX, AX ;zera antes 
     mov AX, LARGURA * 50 
     mov nave_posicao, AX 
      
-    add AX, limite_direita 
+    add AX, [limite_direita]
     add AX, LARGURA * 20  
     mov meteoro_posicao, AX  
     
-      
     pop AX
     
-  ret
+    ret
 endp
 
 ; =================================================================
@@ -1472,7 +1462,6 @@ endp
 ; Saida: [alien_posicao], [alien_x], [alien_y]
 ; =================================================================
 RESET_ALIEN_MENU proc
-    
     push AX
     push DX
     push BX
@@ -1537,7 +1526,7 @@ LIMPA_13x29 proc;
         mov CX, 29
         xor AX, AX
         rep stosb
-        add DI, limite_direita
+        add DI, [limite_direita]
         pop CX
         loop LIMPA_LINHA
 
@@ -1582,7 +1571,7 @@ DESENHA proc
     LINHA_LOOP:
          mov CX, 29 
          rep movsb 
-         add DI, limite_direita
+         add DI, [limite_direita]
          
          dec DX 
          jnz LINHA_LOOP 
@@ -1686,19 +1675,19 @@ DIMINUIR_VIDA proc
     dec AL 
     mov vidas, AL 
     
-    mov BL,AL 
-    mov vidas_vetor[BX],0
+    mov BL ,AL 
+    mov vidas_vetor[BX], 0
     
     mov AL, vida_posicao_x[BX] 
     mov DI, AX
     mov DX, 7 
 
     DIMINUIR_VIDA_LOOP:
-        mov CX,16
-        mov AL,0
+        mov CX, 16
+        mov AL, 0
         rep stosb 
         
-        add DI, LARGURA-16
+        add DI, LARGURA -16
         dec DX
         jnz DIMINUIR_VIDA_LOOP
  
@@ -1723,11 +1712,11 @@ RECARREGA_VIDA proc
     push BX
     push CX
     
-    xor BX,BX
-    xor AX,AX
+    xor BX, BX
+    xor AX, AX
     
-    mov CX,3
-    mov AL,0
+    mov CX, 3
+    mov AL, 0
     LOOP_RECARGA:
         cmp AL, 3
         je TERMINOU_RECARGA
@@ -1764,7 +1753,7 @@ MOSTRAR_VIDAS proc
 
     DESENHAR_VIDA:
         lea SI, vida  
-        mov AL, [vidas_vetor+bx]
+        mov AL, [vidas_vetor+BX]
         cmp AX, 0
 
         je PROXIMA_VIDA
@@ -1775,7 +1764,6 @@ MOSTRAR_VIDAS proc
     PROXIMA_VIDA:
         inc  BX
         loop DESENHAR_VIDA
-
 
     pop  SI
     pop  DX
@@ -1793,32 +1781,29 @@ endp
 MENU_ANIMATION proc
     MOVE_NAVE:
         mov AX, nave_posicao
-        mov DI, AX   
-        
+        mov DI, AX
         call LIMPA_13x29
         
-        cmp AX, LARGURA * 50 + limite_direita 
+        mov BX, LARGURA * 50
+        add BX, [limite_direita]
+        cmp AX, BX
         je MOVE_METEORO
         
         inc nave_posicao 
-        inc AX 
-        
+        inc AX
         mov SI, offset nave 
         call DESENHA
     
     MOVE_METEORO:
         mov AX, meteoro_posicao
         mov DI, AX
-        
-        cmp AX, LARGURA * 70 
-        
-        je RESET_NAVE_METEORO
-        
         call LIMPA_13x29
-            
+        
+        cmp AX, LARGURA * 70
+        je RESET_NAVE_METEORO
+
         dec meteoro_posicao
         dec AX
-        
         mov SI, offset meteoro
         call DESENHA
 
@@ -1831,13 +1816,11 @@ MENU_ANIMATION proc
         mov DI, AX
         
         mov DX, alien_x 
+        call LIMPA_13x29
         
         cmp DX, 0 
-        
         je RESET_ALIEN_DIRECTION
         
-        call LIMPA_13x29
-            
         dec alien_posicao
         dec AX
         dec alien_x
@@ -1851,7 +1834,7 @@ MENU_ANIMATION proc
         mov AX, alien_posicao
         mov DI, AX
         mov DX, alien_x  
-        cmp DX, limite_direita    
+        cmp DX, [limite_direita]
         je RESET_ALIEN
         
         call LIMPA_13x29
@@ -1869,12 +1852,10 @@ MENU_ANIMATION proc
         jmp END_POS_UPDATE
         
     RESET_ALIEN:
-        call LIMPA_13x29
         mov alien_direction, 1
         jmp END_POS_UPDATE
         
     RESET_NAVE_METEORO:
-        call LIMPA_13x29
         call RESET_POSICOES_MENU 
     
     END_POS_UPDATE:
@@ -1989,6 +1970,4 @@ MAIN:
     int 10H
     
     call JOGO
-    
-
 end MAIN
