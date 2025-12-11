@@ -21,6 +21,7 @@
 
     MAX_TIROS               EQU 5
     VELOCIDADE_TIRO         EQU 4
+    VELOCIDADE_JET          EQU VELOCIDADE + 1
 
     CR                      EQU 13      ; define uma constante de valor 13
     LF                      EQU 10      ; define uma constante de valor 10
@@ -78,21 +79,18 @@ arte_titulo db 3 dup(" ")," ___                    _    _     ", LF, CR
             db 3 dup(" "),"/ __| __ _ _ __ _ _ __ | |__| |___ ", LF, CR
             db 3 dup(" "),"\__ \/ _| '_/ _` | '  \| '_ \ / -_)", LF, CR
             db 3 dup(" "),"|___/\__|_| \__,_|_|_|_|_.__/_\___|", LF, CR
-       
 tamanho_arte equ $ - arte_titulo
 
 arte_f1 db 10 dup(" ")," ___               _ ", LF, CR
         db 10 dup(" "),"| __|_ _ ___ ___  / |", LF, CR
         db 10 dup(" "),"| _/ _` (_-</ -_) | |", LF, CR
         db 10 dup(" "),"|_|\__,_/__/\___| |_|", LF, CR
-            
 tamanho_f1 equ $ - arte_f1
 
 arte_f2 db 10 dup(" ")," ___               ___ ", LF, CR
         db 10 dup(" "),"| __|_ _ ___ ___  |_  )", LF, CR
         db 10 dup(" "),"| _/ _` (_-</ -_)  / / ", LF, CR
-        db 10 dup(" "),"|_|\__,_/__/\___| /___|", LF, CR
-            
+        db 10 dup(" "),"|_|\__,_/__/\___| /___|", LF, CR 
 tamanho_f2 equ $ - arte_f2
 
 arte_f3 db 10 dup(" ")," ___               ____ ", LF, CR
@@ -101,25 +99,20 @@ arte_f3 db 10 dup(" ")," ___               ____ ", LF, CR
         db 10 dup(" "),"|_|\__,_/__/\___| |___/ ", LF, CR
 tamanho_f3 equ $ - arte_f3
 
-
-
 arte_game_over db 10 dup(" "),"   ___                ",LF,CR
                db 10 dup(" "),"  / __|__ _ _ __  ___ ",LF,CR
                db 10 dup(" ")," | (_ / _` | '  \/ -_)",LF,CR
                db 10 dup(" "),"  \___\__,_|_|_|_\___|",LF,CR
                db 10 dup(" "),"  / _ \__ _____ _ _   ",LF,CR
                db 10 dup(" ")," | (_) \ V / -_) '_|  ",LF,CR
-               db 10 dup(" "),"  \___/ \_/\___|_|    ",LF,CR
-               
+               db 10 dup(" "),"  \___/ \_/\___|_|    ",LF,CR  
 tamanho_arte_game_over equ $-arte_game_over
 
 arte_vencedor db 3 dup(" "),"__   __                  _         ",LF,CR
               db 3 dup(" "),"\ \ / /__ _ _  __ ___ __| |___ _ _ ",LF,CR
               db 3 dup(" ")," \ V / -_) ' \/ _/ -_) _` / _ \ '_|",LF,CR
-              db 3 dup(" "),"  \_/\___|_||_\__\___\__,_\___/_|  ",LF,CR
-              
+              db 3 dup(" "),"  \_/\___|_||_\__\___\__,_\___/_|  ",LF,CR     
 tamanho_arte_vencedor equ $-arte_vencedor
-
 
 btn_jogar db 15 dup(" "),218,196,196,196,196,196,196,196,191,LF,CR
           db 15 dup(" "),179,           " JOGAR ",       179,LF,CR
@@ -176,7 +169,6 @@ alien db 00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,02h,02h,02h,02h,0Ah,0Eh,0Eh,0Eh
       db 00h,00h,00h,00h,00h,00h,00h,00h,00h,00h,02h,02h,02h,0Ah,0Ah,0Eh,0Eh,0Eh,0Eh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00H
 alien_tamanho equ $ - alien
 
-
 pontuacao_frase db "PONTUACAO:"
 tamanho_pontuacao_frase equ $-pontuacao_frase
 
@@ -190,7 +182,6 @@ vida db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,00H,0EH,0EH,0EH,00H,00H,00H
      db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH
      db 00H,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H
      db 09H,09H,09H,09H,09H,00H,0CH,0CH,0CH,0CH,0CH,0CH,00H,00H,00H,00H
-
 vida_tamanho equ $-vida
 
 scroll_cenario dw 0
@@ -610,7 +601,7 @@ endp
 ; =================================================================
 MOVER_VERTICAL proc
     push BX
-    mov BX, LARGURA
+    mov BX, LARGURA * VELOCIDADE_JET
     
     cmp AX, 0
     je MOVER_CIMA
@@ -637,14 +628,77 @@ MOVER_HORIZONTAL proc
     je MOVER_ESQUERDA
     
     MOVER_DIREITA:
-        inc DI
+        add DI, VELOCIDADE_JET
         jmp SAIR_MOVIMENTO_HORIZONTAL
     
     MOVER_ESQUERDA:
-        dec DI
+        sub DI, VELOCIDADE_JET
         jmp SAIR_MOVIMENTO_HORIZONTAL
     
     SAIR_MOVIMENTO_HORIZONTAL:
+        ret
+endp
+
+; =================================================================
+; Cria um novo inimigo em uma posicao vertical aleatoria.
+; Entrada: Nenhum
+; Saida: Atualiza vetores de inimigos.
+; =================================================================
+SPAWN_INIMIGO proc
+    push AX
+    push BX
+    push CX
+    push DX
+    push SI
+    
+    xor SI, SI
+    xor BX, BX
+
+    PROCURA_VAGA_INIMIGO:
+        cmp SI, MAX_INIMIGOS
+        je FIM_SPAWN
+        
+        cmp inimigos_ativo[SI], 0
+        je GERAR
+        
+        inc SI
+        add BX, 2
+        jmp PROCURA_VAGA_INIMIGO
+
+    GERAR:
+        push BX
+
+        xor BX, BX
+        mov BL, [fase]
+        dec BL
+        shl BX, 1
+        mov CX, altura_terrenos[BX]
+
+        pop BX
+
+        mov AX, ALTURA -10 -13 ; ALTURA - HUD - SPRITE
+        sub AX, CX
+        mov AH, AL
+        call RAND_8
+        add AL, 10
+        xor AH, AH
+
+        push CX
+        mov CX, LARGURA
+        mul CX
+        pop CX
+        
+        add AX, limite_direita
+        
+        mov inimigos_posicao[BX], AX
+        mov inimigos_ativo[SI], 1
+
+    FIM_SPAWN:
+        pop SI
+        pop DX
+        pop CX
+        pop BX
+        pop AX
         ret
 endp
 
@@ -683,7 +737,7 @@ MOVE_INIMIGOS proc
         pop BX
     
         cmp DX, VELOCIDADE
-        jbe MATAR_INIMIGO
+        jbe REMOVER_INIMIGO
         
         sub inimigos_posicao[BX], VELOCIDADE
         
@@ -705,7 +759,7 @@ MOVE_INIMIGOS proc
         
         jmp PROXIMO_INIMIGO
 
-    MATAR_INIMIGO:
+    REMOVER_INIMIGO:
         mov inimigos_ativo[SI], 0
 
     PROXIMO_INIMIGO:
@@ -758,70 +812,6 @@ SPAWN_TIRO proc
 endp
 
 ; =================================================================
-; Cria um novo inimigo em uma posicao vertical aleatoria.
-; Entrada: Nenhum
-; Saida: Atualiza vetores de inimigos.
-; =================================================================
-SPAWN_INIMIGO proc
-    push AX
-    push BX
-    push CX
-    push DX
-    push SI
-    
-    xor SI, SI
-    xor BX, BX
-
-    PROCURA_VAGA_INIMIGO:
-        cmp SI, MAX_INIMIGOS
-        je FIM_SPAWN
-        
-        cmp inimigos_ativo[SI], 0
-        je GERAR
-        
-        inc SI
-        add BX, 2
-        jmp PROCURA_VAGA_INIMIGO
-
-    GERAR:
-        push BX
-
-        xor BX, BX
-        mov BL, [fase]
-        dec BL
-        shl BX, 1
-
-        mov CX, altura_terrenos[BX]
-
-        pop BX
-
-        mov AX, ALTURA -10 -13 ; ALTURA - HUD - SPRITE
-        sub AX, CX
-        mov AH, AL
-        call RAND_8
-        add AL, 10
-        xor AH, AH
-
-        push CX
-        mov CX, LARGURA
-        mul CX
-        pop CX
-        
-        add AX, limite_direita
-        
-        mov inimigos_posicao[BX], AX
-        mov inimigos_ativo[SI], 1
-
-    FIM_SPAWN:
-        pop SI
-        pop DX
-        pop CX
-        pop BX
-        pop AX
-        ret
-endp
-
-; =================================================================
 ; Move todos os tiros ativos e verifica bordas.
 ; Entrada: Vetores [tiros_ativo], [tiros_posicao].
 ; Saida: Nenhum
@@ -850,11 +840,9 @@ MOVE_TIROS proc
         pop BX
         
         cmp DX, VELOCIDADE_TIRO
-        jb MATAR_ESSE_TIRO
+        jb REMOVER_TIRO
         cmp DX, 315
-        ja MATAR_ESSE_TIRO
-
-        call VERIFICA_COLISAO_INDIVIDUAL
+        ja REMOVER_TIRO
         
         cmp tiros_ativo[SI], 0
         je PROXIMO_TIRO_LOOP
@@ -864,7 +852,7 @@ MOVE_TIROS proc
         
         jmp PROXIMO_TIRO_LOOP
 
-    MATAR_ESSE_TIRO:
+    REMOVER_TIRO:
         mov tiros_ativo[SI], 0
 
     PROXIMO_TIRO_LOOP:
@@ -873,83 +861,6 @@ MOVE_TIROS proc
         jmp LOOP_TIROS
 
     SAI_GERENCIA_TIROS:
-        ret
-endp
-
-; =================================================================
-; Verifica colisao entre o tiro atual e todos os inimigos.
-; Entrada: BX = indice Word do Tiro, SI = indice Byte do Tiro.
-; Saida: Atualiza estado de vida dos inimigos e tiros.
-; =================================================================
-VERIFICA_COLISAO_INDIVIDUAL proc
-    push AX
-    push CX
-    push DX
-    push DI
-    push SI
-    push BX
-
-    xor SI, SI
-    xor DI, DI
-
-    LOOP_COLISAO_INIMIGOS:
-        cmp SI, MAX_INIMIGOS
-        je FIM_VERIFICA_COLISAO
-
-        cmp inimigos_ativo[SI], 1
-        jne PROX_INIMIGO_COLISAO
-
-        mov BX, SP
-        mov BX, [BX]
-        
-        mov AX, tiros_posicao[BX]
-        sub AX, inimigos_posicao[DI]
-        
-        cmp AX, 0
-        jl PROX_INIMIGO_COLISAO
-    
-        push DX
-        xor DX, DX
-        mov CX, LARGURA
-        div CX
-        mov CX, DX
-        pop DX
-        
-        cmp AX, 13
-        ja PROX_INIMIGO_COLISAO
-        
-        cmp CX, 29
-        ja PROX_INIMIGO_COLISAO
-
-        mov BX, SP
-        mov BX, [BX+2]
-        mov tiros_ativo[BX], 0
-    
-        mov AL, [fase]
-        cmp AL, 2
-        je FIM_VERIFICA_COLISAO
-        
-        mov inimigos_ativo[SI], 0
-        
-        push DI
-        mov DI, inimigos_posicao[DI]
-        call LIMPA_13x29
-        pop DI
-        
-        jmp FIM_VERIFICA_COLISAO
-
-    PROX_INIMIGO_COLISAO:
-        inc SI
-        add DI, 2
-        jmp LOOP_COLISAO_INIMIGOS
-
-    FIM_VERIFICA_COLISAO:
-        pop BX
-        pop SI
-        pop DI
-        pop DX
-        pop CX
-        pop AX
         ret
 endp
 
@@ -1545,7 +1456,7 @@ RESET_POSICOES_MENU proc
     mov AX, LARGURA * 50 
     mov nave_posicao, AX 
      
-    add AX, 291 
+    add AX, limite_direita 
     add AX, LARGURA * 20  
     mov meteoro_posicao, AX  
     
@@ -1626,7 +1537,7 @@ LIMPA_13x29 proc;
         mov CX, 29
         xor AX, AX
         rep stosb
-        add DI, 291
+        add DI, limite_direita
         pop CX
         loop LIMPA_LINHA
 
@@ -1886,7 +1797,7 @@ MENU_ANIMATION proc
         
         call LIMPA_13x29
         
-        cmp AX, LARGURA * 50 + 291 
+        cmp AX, LARGURA * 50 + limite_direita 
         je MOVE_METEORO
         
         inc nave_posicao 
@@ -2079,4 +1990,5 @@ MAIN:
     
     call JOGO
     
+
 end MAIN
