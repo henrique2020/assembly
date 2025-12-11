@@ -17,7 +17,7 @@
 
     MAX_INIMIGOS            EQU 5
     DELAY_SPAWN_INIMIGO     EQU 50
-    VELOCIDADE              EQU 1       ; Quanto maior, mais rapido
+    VELOCIDADE              EQU 5       ; Quanto maior, mais rapido
 
     MAX_TIROS               EQU 5
     VELOCIDADE_TIRO         EQU 4
@@ -541,7 +541,13 @@ VERIFICA_TECLADO_JOGO proc
     jmp FIM_TECLADO_JOGO
     
     SETA_CIMA:
-        cmp DI, [limite_topo]
+        push BX
+        mov BX, LARGURA * VELOCIDADE_JET
+        mov AX, [limite_topo]
+        add AX, BX
+        pop BX
+        
+        cmp DI, AX
         jbe FIM_TECLADO_JOGO 
 
         mov AX, 0 ; 0 = Cima
