@@ -1332,6 +1332,16 @@ JOGO proc
         call RESET_ALIEN_MENU
         call RESET_POSICOES_MENU
         mov fase,0
+        mov SI,terrenos_ptrs[0]
+    
+        mov BH, 06H  
+        mov BL, 09H 
+        call TERRENO_TROCA_COR
+    
+        mov BH, 0CH 
+        mov BL, 0EH
+        call TERRENO_TROCA_COR
+        
         jmp MENU 
         
     SAIR_JOGO_LOOP:
