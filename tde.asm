@@ -910,7 +910,7 @@ VERIFICA_COLISAO_INDIVIDUAL proc
     
         push DX
         xor DX, DX
-        mov CX, 320
+        mov CX, LARGURA
         div CX
         mov CX, DX
         pop DX
@@ -1531,12 +1531,12 @@ RESET_POSICOES_MENU proc
     
     push AX   
     
-    xor AX,AX ;zera antes 
-    mov AX, 50*320 
+    xor AX, AX ;zera antes 
+    mov AX, LARGURA * 50 
     mov nave_posicao, AX 
      
     add AX, 291 
-    add AX, 20*320  
+    add AX, LARGURA * 20  
     mov meteoro_posicao, AX  
     
       
@@ -1580,19 +1580,14 @@ RESET_ALIEN_MENU proc
         mov DL, AL
         mov alien_x, DX 
         
+        mov BX, LARGURA 
         
-        mov BX, 320 
-        
-        mov AX,alien_y 
+        mov AX, alien_y 
         mul BX 
         
-        add AX,alien_x
-    
+        add AX, alien_x
         mov alien_posicao, AX
-        
-        mov alien_direction,1
-
-        
+        mov alien_direction, 1
 
         pop BX
         pop DX
@@ -1666,7 +1661,7 @@ DESENHA proc
     LINHA_LOOP:
          mov CX, 29 
          rep movsb 
-         add DI, 320-29
+         add DI, limite_direita
          
          dec DX 
          jnz LINHA_LOOP 
@@ -1704,7 +1699,6 @@ DESENHA_7x16 proc
      mov AX, 0A000H
      mov ES, AX
      
-     
      pop AX 
      mov DI, AX
      MOV DX, 7 
@@ -1712,12 +1706,12 @@ DESENHA_7x16 proc
      push AX
      
     LINHA_LOOP2:
-            mov CX, 16 
-            rep movsb 
-            add DI, 320-16  
-            
-            dec DX 
-            jnz LINHA_LOOP2 
+        mov CX, 16 
+        rep movsb 
+        add DI, LARGURA-16  
+        
+        dec DX 
+        jnz LINHA_LOOP2 
          
     pop AX
     pop DS
@@ -1783,7 +1777,7 @@ DIMINUIR_VIDA proc
         mov AL,0
         rep stosb 
         
-        add DI, 320-16
+        add DI, LARGURA-16
         dec DX
         jnz DIMINUIR_VIDA_LOOP
  
@@ -1882,7 +1876,7 @@ MENU_ANIMATION proc
         
         call LIMPA_13x29
         
-        cmp AX, 50*320+291 
+        cmp AX, LARGURA * 50 + 291 
         je MOVE_METEORO
         
         inc nave_posicao 
@@ -1895,8 +1889,7 @@ MENU_ANIMATION proc
         mov AX, meteoro_posicao
         mov DI, AX
         
-        cmp AX, 70*320 
-        
+        cmp AX, LARGURA * 70 
         
         je RESET_NAVE_METEORO
         
@@ -1909,10 +1902,9 @@ MENU_ANIMATION proc
         call DESENHA
 
      MOVE_ALIEN:
-    
-     mov DX,alien_direction
-     cmp DX,1   
-     jne ALIEN_DIREITA
+        mov DX, alien_direction
+        cmp DX, 1   
+        jne ALIEN_DIREITA
      
         mov AX, alien_posicao
         mov DI, AX
@@ -1994,10 +1986,10 @@ TERRENO_DESENHA proc
         mov DI, DX
         mov DX, AX
     DESENHA_LINHA_TERRENO:
-        mov CX, 320
+        mov CX, LARGURA
         rep movsb
 
-        add SI, LARGURA_CENARIO-LARGURA
+        add SI, LARGURA_CENARIO - LARGURA
         dec DX
         jnz DESENHA_LINHA_TERRENO
 
