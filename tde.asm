@@ -324,11 +324,11 @@ terreno_predios db 2 dup(07H), 8 dup(04H), 4 dup(07H), 8 dup(04H), 4 dup(07H), 8
 .code
 
 ; =================================================================
-; Escreve uma string na tela utilizando a interrup????o 10h (AH=13h).
+; Escreve uma string na tela utilizando a interrupcao 10h (AH=13h).
 ; Entrada: 
 ;   BP = Offset da string
 ;   CX = Tamanho da string
-;   DH, DL = Posi????o (Linha, Coluna)
+;   DH, DL = Posicao (Linha, Coluna)
 ;   BL = Atributo de cor
 ; Saida: Nenhum
 ; =================================================================
@@ -360,11 +360,11 @@ ESCREVE_STRING proc
 endp
 
 ; =================================================================
-; Converte um valor num??rico de 16 bits em caracteres ASCII e o imprime na tela, preenchendo com zeros ?? esquerda.
+; Converte um valor numerico de 16 bits em caracteres ASCII e o imprime na tela, preenchendo com zeros a esquerda.
 ; Entrada: 
-;   AX = Valor num??rico
-;   CX = Largura do campo (n??mero de caracteres)
-;   DH, DL = Posi????o (Linha, Coluna)
+;   AX = Valor numerico
+;   CX = Largura do campo (numero de caracteres)
+;   DH, DL = Posicao (Linha, Coluna)
 ;   BL = Cor
 ; Saida: Nenhum
 ; =================================================================
@@ -442,8 +442,8 @@ ESCREVE_NUMERO proc
 endp
 
 ; =================================================================
-; Atualiza e desenha os valores de pontua????o e tempo no HUD.
-; Entrada: Vari??veis globais [pontuacao], [tempo_restante].
+; Atualiza e desenha os valores de pontuacao e tempo no HUD.
+; Entrada: Variaveis globais [pontuacao], [tempo_restante].
 ; Saida: Nenhum
 ; =================================================================
 ESCREVE_VALORES_HUD proc
@@ -465,7 +465,7 @@ ESCREVE_VALORES_HUD proc
 endp
 
 ; =================================================================
-; Preenche toda a mem??ria de v??deo (320x200) com cor preta.
+; Preenche toda a memoria de video (320x200) com cor preta.
 ; Entrada: Nenhum
 ; Saida: Nenhum
 ; =================================================================
@@ -516,8 +516,8 @@ LIMPA_BUFFER_TECLADO proc
 endp
 
 ; =================================================================
-; L?? o estado do teclado a movimenta????o da nave e disparo de tiros.
-; Entrada: Vari??veis [nave_posicao] e limites de tela.
+; Le o estado do teclado a movimentacao da nave e disparo de tiros.
+; Entrada: Variaveis [nave_posicao] e limites de tela.
 ; Saida: Atualiza [nave_posicao].
 ; =================================================================
 VERIFICA_TECLADO_JOGO proc
@@ -604,9 +604,9 @@ VERIFICA_TECLADO_JOGO proc
 endp
 
 ; =================================================================
-; Altera o offset da nave para mov??-la verticalmente.
-; Entrada: AX (0=Cima, 1=Baixo), DI (Posi????o atual).
-; Saida: DI (Nova posi????o).
+; Altera o offset da nave para movela verticalmente.
+; Entrada: AX (0=Cima, 1=Baixo), DI (Posicao atual).
+; Saida: DI (Nova posicao).
 ; =================================================================
 MOVER_VERTICAL proc
     push BX
@@ -628,9 +628,9 @@ MOVER_VERTICAL proc
 endp
 
 ; =================================================================
-; Altera o offset da nave para mov??-la horizontalmente.
-; Entrada: AX (0=Esquerda, 1=Direita), DI (Posi????o atual).
-; Saida: DI (Nova posi????o).
+; Altera o offset da nave para move-la horizontalmente.
+; Entrada: AX (0=Esquerda, 1=Direita), DI (Posicao atual).
+; Saida: DI (Nova posicao).
 ; =================================================================
 MOVER_HORIZONTAL proc
     cmp AX, 0
@@ -649,7 +649,7 @@ MOVER_HORIZONTAL proc
 endp
 
 ; =================================================================
-; Controla spawn, movimenta????o e desenho dos inimigos.
+; Controla spawn, movimentacao e desenho dos inimigos.
 ; Entrada: Vetores [inimigos_ativo], [inimigos_posicao].
 ; Saida: Nenhum
 ; =================================================================
@@ -718,8 +718,8 @@ MOVE_INIMIGOS proc
 endp
 
 ; =================================================================
-; Cria um novo tiro na posi????o atual da nave.
-; Entrada: DI (Posi????o da nave).
+; Cria um novo tiro na posicao atual da nave.
+; Entrada: DI (Posicao da nave).
 ; Saida: Atualiza vetores de tiro.
 ; =================================================================
 SPAWN_TIRO proc
@@ -758,7 +758,7 @@ SPAWN_TIRO proc
 endp
 
 ; =================================================================
-; Cria um novo inimigo em uma posi????o vertical aleat??ria.
+; Cria um novo inimigo em uma posicao vertical aleatoria.
 ; Entrada: Nenhum
 ; Saida: Atualiza vetores de inimigos.
 ; =================================================================
@@ -877,8 +877,8 @@ MOVE_TIROS proc
 endp
 
 ; =================================================================
-; Verifica colis??o entre o tiro atual e todos os inimigos.
-; Entrada: BX = ??ndice Word do Tiro, SI = ??ndice Byte do Tiro.
+; Verifica colisao entre o tiro atual e todos os inimigos.
+; Entrada: BX = indice Word do Tiro, SI = indice Byte do Tiro.
 ; Saida: Atualiza estado de vida dos inimigos e tiros.
 ; =================================================================
 VERIFICA_COLISAO_INDIVIDUAL proc
@@ -954,7 +954,7 @@ VERIFICA_COLISAO_INDIVIDUAL proc
 endp
 
 ; =================================================================
-; Realiza um delay e limpa a tela para transi????o de fase.
+; Realiza um delay e limpa a tela para transicao de fase.
 ; Entrada: [tempo_tela_fase]
 ; Saida: Nenhum
 ; =================================================================
@@ -970,10 +970,16 @@ endp
 
 ; =================================================================
 ; Controla o loop principal do gameplay.
-; Entrada: Vari??veis globais do jogo.
+; Entrada: Variaveis globais do jogo.
 ; Saida: Nenhum
 ; =================================================================
 PARTIDA proc
+    push AX   
+    xor AX, AX 
+    mov AX, LARGURA * 60 
+    mov [nave_posicao], AX
+    pop AX
+ 
     mov [tempo_restante], DURACAO_FASE
     mov [cont_frames], 0  
 
@@ -1001,7 +1007,7 @@ PARTIDA proc
     cmp BX, 2
     jne NAO_TROCA_COR
   
-    mov SI,terrenos_ptrs[BX]
+    mov SI, terrenos_ptrs[BX]
     
     mov BH, 09H 
     mov BL, 06H 
@@ -1027,7 +1033,6 @@ PARTIDA proc
         call DESENHA
 
     JOGANDO:
-        
         call CHECA_VIDAS
         cmp fase,5
         je SAIR_DA_FASE
@@ -1092,12 +1097,13 @@ endp
 
 
 ; =================================================================
-; Gerencia a sele??o de op??es e transi??o entre fases.
+; Gerencia a selecao de opcoes e transicao entre fases.
 ; Entrada: [menu_selecao]
 ; Saida: Nenhum
 ; =================================================================
 JOGAR_SAIR proc
     mov [fase], 0
+    mov [pontuacao], 0
     cmp menu_selecao, 1
     jne JOGAR_F1
     call TERMINA_JOGO
@@ -1114,11 +1120,10 @@ JOGAR_SAIR proc
         call CARREGA_FASE
 
         inc fase
-        call DIMINUIR_VIDA 
         call PARTIDA
         
         call CHECA_VIDAS
-        cmp fase,5
+        cmp fase, 5
         je PERDEU
         
         
@@ -1134,11 +1139,10 @@ JOGAR_SAIR proc
         call CARREGA_FASE
 
         inc fase
-        call DIMINUIR_VIDA 
         call PARTIDA
         
         call CHECA_VIDAS
-        cmp fase,5
+        cmp fase, 5
         je PERDEU
         
     JOGAR_F3:
@@ -1153,11 +1157,10 @@ JOGAR_SAIR proc
         call CARREGA_FASE
 
         inc fase
-        call DIMINUIR_VIDA 
         call PARTIDA
         
         call CHECA_VIDAS
-        cmp fase,5
+        cmp fase, 5
         je PERDEU
         
     call LIMPA_TELA    
@@ -1169,16 +1172,15 @@ JOGAR_SAIR proc
     call LIMPA_TELA
     jmp SAIR_JOGO
         
-PERDEU:
-     call LIMPA_TELA
-     call ESCREVE_GAME_OVER
-     xor  AH, AH 
-     int  16h 
-     call LIMPA_TELA   
-          
+    PERDEU:
+         call LIMPA_TELA
+         call ESCREVE_GAME_OVER
+         xor  AH, AH 
+         int  16h 
+         call LIMPA_TELA   
            
     SAIR_JOGO:
-    ret
+        ret
 endp
 
 ; =================================================================
@@ -1193,7 +1195,7 @@ TERMINA_JOGO proc
 endp
 
 ; =================================================================
-; Desenha as op????es do menu com destaque na selecionada.
+; Desenha as opcoes do menu com destaque na selecionada.
 ; Entrada: [menu_selecao]
 ; Saida: Nenhum
 ; =================================================================
@@ -1243,7 +1245,7 @@ VERIFICA_OPCAO proc
 endp
 
 ; =================================================================
-; L?? o teclado no menu para navega????o entre op????es.
+; Le o teclado no menu para navegar entre as opcoes.
 ; Entrada: Teclado.
 ; Saida: Atualiza [menu_selecao].
 ; =================================================================
@@ -1315,27 +1317,29 @@ JOGO proc
         jne CONTINUA_LOOP
         
     CONTINUA_LOOP:
-        cmp fase,4
+        cmp fase, 4
         je RESET_JOGO  
-        cmp fase,5
+        cmp fase, 5
         je RESET_JOGO 
         call VERIFICA_OPCAO
         jmp MENU
  
     RESET_JOGO:
-    call LIMPA_TELA
-    call RECARREGA_VIDA
-    call ESCREVE_TITULO
-    call ESCREVE_BOTOES  
-    mov fase,0
-    jmp MENU 
+        call LIMPA_TELA
+        call RECARREGA_VIDA
+        call ESCREVE_TITULO
+        call ESCREVE_BOTOES
+        call RESET_ALIEN_MENU
+        call RESET_POSICOES_MENU
+        mov fase,0
+        jmp MENU 
         
     SAIR_JOGO_LOOP:
-    ret
+        ret
 endp
 
 ; =================================================================
-; Desenha o t??tulo ASCII do jogo na tela.
+; Desenha o titulo ASCII do jogo na tela.
 ; Entrada: [arte_titulo]
 ; Saida: Nenhum
 ; =================================================================
@@ -1411,7 +1415,7 @@ ESCREVE_GAME_OVER proc
 endp
 
 ; =================================================================
-; Desenha os bot??es iniciais do menu.
+; Desenha os botoes iniciais do menu.
 ; Entrada: [op_menu]
 ; Saida: Nenhum
 ; =================================================================
@@ -1452,8 +1456,8 @@ endp
 
 
 ; =================================================================
-; Inicializa a semente do gerador de n??meros aleat??rios usando o rel??gio do sistema.
-; Entrada: Rel??gio do sistema (INT 1Ah).
+; Inicializa a semente do gerador de numeros aleatorios usando o relogio do sistema.
+; Entrada: Relogio do sistema (INT 1Ah).
 ; Saida: [seed]
 ; =================================================================
 SEED_FROM_TICKS proc  
@@ -1471,9 +1475,9 @@ SEED_FROM_TICKS proc
 endp
 
 ; =================================================================
-; Gera um n??mero pseudoaleat??rio de 16 bits.
+; Gera um numero pseudoaleatorio de 16 bits.
 ; Entrada: [seed]
-; Saida: AX (N??mero aleat??rio), [seed] atualizado
+; Saida: AX (Numero aleatorio), [seed] atualizado
 ; =================================================================
 RAND_16 proc
     
@@ -1487,9 +1491,9 @@ RAND_16 proc
 endp
 
 ; =================================================================
-; Gera um n??mero pseudoaleat??rio de 8 bits.
-; Entrada: AH (Limite m??ximo)
-; Saida: AL (N??mero aleat??rio entre 0 e AH)
+; Gera um numero pseudoaleatorio de 8 bits.
+; Entrada: AH (Limite maximo)
+; Saida: AL (Numero aleatorio entre 0 e AH)
 ; =================================================================
 RAND_8 proc
 
@@ -1519,7 +1523,7 @@ RAND_8 proc
 endp
 
 ; =================================================================
-; Redefine posi????es dos elementos animados do menu.
+; Redefine posicoes dos elementos animados do menu.
 ; Entrada: Nenhum
 ; Saida: [nave_posicao], [meteoro_posicao]
 ; =================================================================
@@ -1542,7 +1546,7 @@ RESET_POSICOES_MENU proc
 endp
 
 ; =================================================================
-; Redefine a posi????o do alien na anima????o do menu.
+; Redefine a posicao do alien na animacaoo do menu.
 ; Entrada: Nenhum
 ; Saida: [alien_posicao], [alien_x], [alien_y]
 ; =================================================================
@@ -1599,7 +1603,7 @@ endp
 
 ; =================================================================
 ; Apaga um sprite de 13x29 pixels na tela.
-; Entrada: DI (Posi????o inicial na mem??ria de v??deo).
+; Entrada: DI (posicao inicial na memoria de video).
 ; Saida: Nenhum
 ; =================================================================
 LIMPA_13x29 proc;            
@@ -1631,9 +1635,9 @@ LIMPA_13x29 proc;
 endp
 
 ; =================================================================
-; Desenha um sprite gen??rico de 13x29 pixels.
+; Desenha um sprite generico de 13x29 pixels.
 ; Entrada: 
-;   AX = Posi????o na tela
+;   AX = posicao na tela
 ;   SI = Offset do sprite
 ; Saida: Nenhum
 ; =================================================================
@@ -1681,7 +1685,7 @@ endp
 ; =================================================================
 ; Desenha o sprite de vida (7x16 pixels).
 ; Entrada: 
-;   AX = Posi????o na tela
+;   AX = posicao na tela
 ;   SI = Offset do sprite
 ; Saida: Nenhum
 ; =================================================================
@@ -1727,20 +1731,18 @@ DESENHA_7x16 proc
 endp
 
 ; =================================================================
-; Faz a checagem da quantidade de vidas atual, caso o numero de vidas seja 0
-; muda o valor de [fase] para 5, indicando game over.
+; Faz a checagem da quantidade de vidas atual, caso o numero de vidas seja 0 muda o valor de [fase] para 5, indicando game over.
 ; Entrada:  Nenhum.
 ; Saida: [fase] atualizado.
 ; =================================================================
 CHECA_VIDAS proc
-    
-    cmp vidas,0
+    cmp vidas, 0
     jne VIDAS_OK
     
-    mov fase,5
+    mov fase, 5
 
-VIDAS_OK:
-    ret
+    VIDAS_OK:
+        ret
 endp
 
 ; =================================================================
@@ -1801,7 +1803,6 @@ endp
 ; Entrada: Nenhum.
 ; Saida: [vidas] atualizado, [vidas_vetor] atualizado
 ; =================================================================
-
 RECARREGA_VIDA proc
     push AX
     push BX
@@ -1812,16 +1813,16 @@ RECARREGA_VIDA proc
     
     mov CX,3
     mov AL,0
-LOOP_RECARGA:
-    cmp AL,3
-    je TERMINOU_RECARGA
-    mov BL,AL 
-    mov vidas_vetor[BX],1
-    inc AL 
-    loop LOOP_RECARGA
-    
-TERMINOU_RECARGA:
-    mov vidas,3
+    LOOP_RECARGA:
+        cmp AL, 3
+        je TERMINOU_RECARGA
+        mov BL, AL 
+        mov vidas_vetor[BX], 1
+        inc AL 
+        loop LOOP_RECARGA
+        
+    TERMINOU_RECARGA:
+        mov vidas, 3
    
     pop CX
     pop BX
@@ -1870,9 +1871,9 @@ MOSTRAR_VIDAS proc
 endp
 
 ; =================================================================
-; Controla a anima????o autom??tica dos elementos no menu principal.
-; Entrada: Posi????es das naves e meteoros.
-; Saida: Atualiza posi????es e redesenha elementos.
+; Controla a animacaoo automatica dos elementos no menu principal.
+; Entrada: posicoes das naves e meteoros.
+; Saida: Atualiza posicoes e redesenha elementos.
 ; =================================================================
 MENU_ANIMATION proc
     MOVE_NAVE:
@@ -2028,7 +2029,7 @@ TERRENO_MOV proc
 ENDP
 
 ; =================================================================
-; Substitui uma cor espec??fica por outra no buffer do terreno.
+; Substitui uma cor especifica por outra no buffer do terreno.
 ; Entrada: 
 ;   DS:SI = Buffer do terreno
 ;   BH = Cor alvo
@@ -2036,29 +2037,29 @@ ENDP
 ; Saida: Buffer alterado.
 ; =================================================================
 TERRENO_TROCA_COR PROC
-    PUSH AX
-    PUSH BX
-    PUSH CX
-    PUSH SI
+    push AX
+    push BX
+    push CX
+    push SI
 
-    MOV CX, LARGURA_CENARIO*50
+    mov CX, LARGURA_CENARIO*50
 
-    CLD
+    cld
 
-TERRENO_TROCA_LOOP:
+    TERRENO_TROCA_LOOP:
+        lodsb
+        cmp AL, BH
+        jne PULA_ESCRITA_COR
+        mov [SI-1], BL
 
-    LODSB
-    CMP AL, BH
-    JNE PULA_ESCRITA_COR
-    MOV [SI-1], BL
-PULA_ESCRITA_COR:
-    LOOP  TERRENO_TROCA_LOOP
+    PULA_ESCRITA_COR:
+        loop TERRENO_TROCA_LOOP
 
-    POP SI
-    POP CX 
-    POP BX
-    POP AX
-    RET
+    pop SI
+    pop CX 
+    pop BX
+    pop AX
+    ret
 endp
 
 MAIN:
